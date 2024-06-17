@@ -6,13 +6,18 @@ import io
 import base64
 import os
 import csv
+import shutil
 
 app = Flask(__name__)
 
 matplotlib.use('Agg')
-all_weights_csv: str = "all_weights_db.csv"
-weekly_averages_csv: str = "weekly_averages_db.csv"
-last_seven_csv: str = "last_seven_db.csv"
+all_weights_csv: str = "./db/all_weights_db.csv"
+weekly_averages_csv: str = "./db/weekly_averages_db.csv"
+last_seven_csv: str = "./db/last_seven_db.csv"
+
+all_weights_csv_backup: str = ".../weight_tracker_db_backup/all_weights_db.csv"
+weekly_averages_csv_backup: str = ".../weight_tracker_db_backup/weekly_averages_db.csv"
+last_seven_csv_backup: str = ".../weight_tracker_db_backup/last_seven_db.csv"
 
 def read_weights_from_csv(csv_db: str):
     weights: list[float] = [] 
@@ -38,7 +43,8 @@ def update_csv(file: str, weights: list[float]):
         for w in weights:
             writer.writerow([w])
 
-
+def backup_csv(source, target):
+    shutil.copyfile(source, target)
 
 all_weights: list[float] = read_weights_from_csv(all_weights_csv)
 all_weekly_averages: list[int] = read_weights_from_csv(weekly_averages_csv)
@@ -83,8 +89,13 @@ def update_everything(weekly_weights: list[int], new_weight: int, weekly_average
         average: int = sum(weekly_weights) / len(weekly_weights)
         weekly_average[-1] = average
 
+    write_weights_to_csv(all_weights_csv, new_weight)
     update_csv(last_seven_csv, last_seven)
     update_csv(weekly_averages_csv, weekly_average)
+
+    backup_csv(all_weights_csv, all_weights_csv_backup)
+    backup_csv(weekly_averages_csv, weekly_averages_csv_backup)
+    backup_csv(last_seven_csv, last_seven_csv_backup)
     
     return weekly_weights, weekly_average
 
@@ -94,9 +105,9 @@ def index():
     if request.method == 'POST':
         new_weight = float(request.form['new_weight'])
         last_seven, all_weekly_averages = update_everything(last_seven, new_weight, all_weekly_averages)
-        write_weights_to_csv(all_weights_csv, new_weight)
         return redirect(url_for('index'))
 
+    
     plot_url = plot_weekly_weights(all_weekly_averages)
     return render_template('index.html', plot_url=plot_url)
 
