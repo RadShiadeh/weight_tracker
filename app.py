@@ -79,6 +79,8 @@ def update_everything(weekly_weights: list[int], new_weight: int, weekly_average
         average: int = sum(weekly_weights) / len(weekly_weights)
         weekly_average[-1] = average
 
+    update_csv(last_seven_csv, last_seven)
+    update_csv(weekly_averages_csv, weekly_average)
     
     return weekly_weights, weekly_average
 
