@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for
+import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 import io
@@ -8,6 +9,7 @@ import csv
 
 app = Flask(__name__)
 
+matplotlib.use('Agg')
 all_weights_csv: str = "all_weights_db.csv"
 weekly_averages_csv: str = "weekly_averages_db.csv"
 last_seven_csv: str = "last_seven_db.csv"
@@ -16,7 +18,7 @@ def read_weights_from_csv(csv_db: str):
     weights: list[float] = [] 
     if os.path.exists(csv_db):
         with open(csv_db, "r") as f:
-            rows = csv.readlines(f)
+            rows = csv.reader(f)
             for r in rows:
                 if r:
                     weights.append(float(r[0]))
@@ -24,11 +26,13 @@ def read_weights_from_csv(csv_db: str):
 
 def write_weights_to_csv(csv_file: str, weight: float):
     with open(csv_file, mode='a', newline='') as f:
+        f.truncate()
         writer = csv.writer(f)
         writer.writerow([weight])
 
 # use for last_seven and weekly_averages 
 def update_csv(file: str, weights: list[float]):
+    os.remove(file)
     with open(file, mode='a', newline='') as f:
         writer = csv.writer(f)
         for w in weights:
@@ -90,7 +94,7 @@ def index():
     if request.method == 'POST':
         new_weight = float(request.form['new_weight'])
         last_seven, all_weekly_averages = update_everything(last_seven, new_weight, all_weekly_averages)
-        write_weights_to_csv(all_weights, new_weight)
+        write_weights_to_csv(all_weights_csv, new_weight)
         return redirect(url_for('index'))
 
     plot_url = plot_weekly_weights(all_weekly_averages)
