@@ -15,9 +15,9 @@ all_weights_csv: str = "./db/all_weights_db.csv"
 weekly_averages_csv: str = "./db/weekly_averages_db.csv"
 last_seven_csv: str = "./db/last_seven_db.csv"
 
-all_weights_csv_backup: str = ".../weight_tracker_db_backup/all_weights_db.csv"
-weekly_averages_csv_backup: str = ".../weight_tracker_db_backup/weekly_averages_db.csv"
-last_seven_csv_backup: str = ".../weight_tracker_db_backup/last_seven_db.csv"
+all_weights_csv_backup: str = "../weight_tracker_db_backup/all_weights_db.csv"
+weekly_averages_csv_backup: str = "../weight_tracker_db_backup/weekly_averages_db.csv"
+last_seven_csv_backup: str = "../weight_tracker_db_backup/last_seven_db.csv"
 
 def read_weights_from_csv(csv_db: str):
     weights: list[float] = [] 
