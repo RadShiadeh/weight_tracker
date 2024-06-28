@@ -8,10 +8,12 @@
 <body>
     <h1>Weekly Weight Tracker</h1>
     <form method="post" action="/">
-        <label for="new_weight">Enter new weight:</label>
+        <label for="date">Select Date:</label>
+        <input type="date" id="date" name="date" required>
+        <label for="new_weight">Enter weight:</label>
         <input type="number" id="new_weight" name="new_weight" step="0.1" required>
         <button type="submit">Submit</button>
     </form>
     <img src="data:image/png;base64,{{ plot_url }}" alt="Plot">
 </body>
-</html>
+</html> 
