@@ -43,7 +43,7 @@ def update_csv(file: str, weights: list[float]):
         for w in weights:
             writer.writerow([w])
 
-def backup_csv(source, target):
+def backup(source, target):
     shutil.copyfile(source, target)
 
 def x_labels(all_weight) -> list[str]:
@@ -67,7 +67,7 @@ def x_labels(all_weight) -> list[str]:
 
 
 
-def plot_weekly_weights(weekly_averages: list[float], all_weights, path: str):
+def plot_weekly_weights(weekly_averages: list[float], all_weights, path: str, backup_path: str):
     x = x_labels(all_weights)
 
     weekly_averages_json_dict = {}
@@ -75,6 +75,7 @@ def plot_weekly_weights(weekly_averages: list[float], all_weights, path: str):
         weekly_averages_json_dict[x[i]] = weekly_averages[i]
 
     write_json(path, weekly_averages_json_dict)
+    backup(path, backup_path)
 
     fig, ax = plt.subplots()
 
@@ -123,9 +124,9 @@ def update_everything(weekly_weights, new_weight: int, weekly_average: list[floa
     write_json(last_seven_json, weekly_weights)
     update_csv(weekly_averages_csv, weekly_average)
 
-    backup_csv(all_weights_json, all_weights_backup)
-    backup_csv(weekly_averages_csv, weekly_averages_csv_backup)
-    backup_csv(last_seven_json, last_seven_backup)
+    backup(all_weights_json, all_weights_backup)
+    backup(weekly_averages_csv, weekly_averages_csv_backup)
+    backup(last_seven_json, last_seven_backup)
     
     return all_weights_c, weekly_weights, weekly_average
 
@@ -143,6 +144,7 @@ weekly_averages_json = "./db/weekly_averages_db.json"
 all_weights_backup: str = "../weight_tracker_db_backup/all_weights_db.csv"
 weekly_averages_csv_backup: str = "../weight_tracker_db_backup/weekly_averages_db.csv"
 last_seven_backup: str = "../weight_tracker_db_backup/last_seven_db.json"
+weekly_averages_json_backup: str = "../weight_tracker_db_backup/weekly_averages_db.json"
 
 all_weights: list[float] = read_json(all_weights_json)
 all_weekly_averages: list[float] = read_weights_from_csv(weekly_averages_csv)
@@ -159,7 +161,7 @@ def index():
         return redirect(url_for('index'))
 
     
-    plot_url = plot_weekly_weights(all_weekly_averages, all_weights, weekly_averages_json)
+    plot_url = plot_weekly_weights(all_weekly_averages, all_weights, weekly_averages_json, weekly_averages_json_backup)
     return render_template('index.html', plot_url=plot_url, dates=dates)
 
 if __name__ == "__main__":
