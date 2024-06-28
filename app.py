@@ -127,7 +127,7 @@ def index():
 
     
     plot_url = plot_weekly_weights(all_weekly_averages)
-    return render_template('index.html', plot_url=plot_url, dates=dates)
+    return render_template('index.html', plot_url=plot_url, dates=dates, dict_data=all_weekly_averages)
 
 if __name__ == "__main__":
     app.run(debug=True)

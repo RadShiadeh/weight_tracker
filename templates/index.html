@@ -15,5 +15,10 @@
         <button type="submit">Submit</button>
     </form>
     <img src="data:image/png;base64,{{ plot_url }}" alt="Plot">
+    <p>
+        {% for key, value in dict_data.items() %}
+            {{ key }} = {{ value[1] }}<br>
+        {% endfor %}
+    </p>
 </body>
 </html> 
