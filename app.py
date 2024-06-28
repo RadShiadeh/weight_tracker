@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 import json
+import math
 from flask import Flask, render_template, request, redirect, url_for
 import matplotlib
 import matplotlib.pyplot as plt
@@ -45,19 +46,39 @@ def update_csv(file: str, weights: list[float]):
 def backup_csv(source, target):
     shutil.copyfile(source, target)
 
+def x_labels(all_weight) -> list[str]:
+    dates: list[str] = list(all_weight.keys())
+    res: list[str] = ["" for _ in range(len(dates) // 7)]
+    index: int = 0
+    for i in range(len(res)):
+        start = dates[index]
+        while index < len(dates) and (index + 1) % 7 != 0:
+            index += 1
+
+        if (index+1) % 7 == 0:
+            end = dates[index]
+            res[i] = f"{start} to {end}"
+            index += 1
+    
+    if len(res) != math.ceil(len(dates) / 7):
+        res.append(f"{dates[index]} to now")
+
+    return res
 
 
-def plot_weekly_weights(weekly_averages: list[int]):
-    x: list[int] = []
-    for i in range(len(weekly_averages)):
-        x.append(i+1)
+
+def plot_weekly_weights(weekly_averages: list[float], all_weights):
+    x = x_labels(all_weights)
 
     fig, ax = plt.subplots()
 
     ax.plot(x, weekly_averages, marker ='o', linestyle='-', color='r')
 
     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
-    ax.set_xlim(1, len(x)) 
+
+    ymin: float = min(weekly_averages) - 0.5
+    ymax: float = max(weekly_averages) + 0.5
+    ax.set_ylim([ymin, ymax])
 
     ax.set_xlabel('week')
     ax.set_ylabel('Weekly Weight')
@@ -131,7 +152,7 @@ def index():
         return redirect(url_for('index'))
 
     
-    plot_url = plot_weekly_weights(all_weekly_averages)
+    plot_url = plot_weekly_weights(all_weekly_averages, all_weights)
     return render_template('index.html', plot_url=plot_url, dates=dates)
 
 if __name__ == "__main__":
