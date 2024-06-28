@@ -67,8 +67,14 @@ def x_labels(all_weight) -> list[str]:
 
 
 
-def plot_weekly_weights(weekly_averages: list[float], all_weights):
+def plot_weekly_weights(weekly_averages: list[float], all_weights, path: str):
     x = x_labels(all_weights)
+
+    weekly_averages_json_dict = {}
+    for i in range(len(x)):
+        weekly_averages_json_dict[x[i]] = weekly_averages[i]
+
+    write_json(path, weekly_averages_json_dict)
 
     fig, ax = plt.subplots()
 
@@ -132,6 +138,7 @@ def generate_dates():
 all_weights_json: str = "./db/all_weights_db.json"
 weekly_averages_csv: str = "./db/weekly_averages_db.csv"
 last_seven_json: str = "./db/last_seven_db.json"
+weekly_averages_json = "./db/weekly_averages_db.json"
 
 all_weights_backup: str = "../weight_tracker_db_backup/all_weights_db.csv"
 weekly_averages_csv_backup: str = "../weight_tracker_db_backup/weekly_averages_db.csv"
@@ -152,7 +159,7 @@ def index():
         return redirect(url_for('index'))
 
     
-    plot_url = plot_weekly_weights(all_weekly_averages, all_weights)
+    plot_url = plot_weekly_weights(all_weekly_averages, all_weights, weekly_averages_json)
     return render_template('index.html', plot_url=plot_url, dates=dates)
 
 if __name__ == "__main__":
