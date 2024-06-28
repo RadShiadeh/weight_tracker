@@ -67,24 +67,30 @@ def x_labels(all_weight) -> list[str]:
 
 
 
-def plot_weekly_weights(weekly_averages: list[float], all_weights, path: str, backup_path: str):
-    x = x_labels(all_weights)
+def plot_weekly_weights(weekly_averages, all_weights, path: str, backup_path: str):
+    x: list[str] = []
+    y: list[float] = []
 
-    weekly_averages_json_dict = {}
-    for i in range(len(x)):
-        weekly_averages_json_dict[x[i]] = weekly_averages[i]
+    for k, v in weekly_averages.items():
+        x.append(k)
+        y.append(v)
+    
 
-    write_json(path, weekly_averages_json_dict)
-    backup(path, backup_path)
+    # weekly_averages_json_dict = {}
+    # for i in range(len(x)):
+    #     weekly_averages_json_dict[x[i]] = weekly_averages.values()[i]
+
+    # write_json(path, weekly_averages_json_dict)
+    # backup(path, backup_path)
 
     fig, ax = plt.subplots()
 
-    ax.plot(x, weekly_averages, marker ='o', linestyle='-', color='r')
+    ax.plot(x, y, marker ='o', linestyle='-', color='r')
 
     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
 
-    ymin: float = min(weekly_averages) - 0.5
-    ymax: float = max(weekly_averages) + 0.5
+    ymin: float = min(y) - 0.5
+    ymax: float = max(y) + 0.5
     ax.set_ylim([ymin, ymax])
 
     ax.set_xlabel('week')
@@ -99,34 +105,41 @@ def plot_weekly_weights(weekly_averages: list[float], all_weights, path: str, ba
     plt.close()
     return plot_url
 
-def update_everything(weekly_weights, new_weight: int, weekly_average: list[float], all_weights_c, selected_date):
+def update_everything(weekly_weights, new_weight: int, weekly_average, all_weights_c, selected_date):
     all_weights_c[selected_date] = new_weight
+
+    weekly_avg_keys: list[str] = []
+    for k in weekly_average.keys():
+        weekly_avg_keys.append(k)
+
+    end_key = weekly_avg_keys[-1]
+
     if len(weekly_weights) == 7:
         average: float = 0
         for k in weekly_weights.values():
             average += k
         average = average / 7
-        weekly_average[-1] = average
+        weekly_average[end_key] = average
 
         weekly_weights = {}
         weekly_weights[selected_date] = new_weight
 
-        weekly_average.append(new_weight)
+        weekly_average[f"{selected_date} to now"] = new_weight
     else:
         weekly_weights[selected_date] = new_weight
         average: float = 0
         for k in weekly_weights.values():
             average += k
         average = average / len(weekly_weights.keys())
-        weekly_average[-1] = average
+        weekly_average[end_key] = average
 
     write_json(all_weights_json, all_weights_c)
     write_json(last_seven_json, weekly_weights)
-    update_csv(weekly_averages_csv, weekly_average)
+    write_json(weekly_averages_json, weekly_average)
 
     backup(all_weights_json, all_weights_backup)
-    backup(weekly_averages_csv, weekly_averages_csv_backup)
     backup(last_seven_json, last_seven_backup)
+    backup(weekly_averages_json, weekly_averages_json_backup)
     
     return all_weights_c, weekly_weights, weekly_average
 
@@ -146,9 +159,9 @@ weekly_averages_csv_backup: str = "../weight_tracker_db_backup/weekly_averages_d
 last_seven_backup: str = "../weight_tracker_db_backup/last_seven_db.json"
 weekly_averages_json_backup: str = "../weight_tracker_db_backup/weekly_averages_db.json"
 
-all_weights: list[float] = read_json(all_weights_json)
-all_weekly_averages: list[float] = read_weights_from_csv(weekly_averages_csv)
-last_seven: list[float] = read_json(last_seven_json)
+all_weights = read_json(all_weights_json)
+last_seven = read_json(last_seven_json)
+all_weekly_averages = read_json(weekly_averages_json)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
