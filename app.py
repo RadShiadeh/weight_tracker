@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta
 import json
-import math
 from flask import Flask, render_template, request, redirect, url_for
 import matplotlib
 import matplotlib.pyplot as plt
@@ -8,22 +7,11 @@ from matplotlib.ticker import MaxNLocator
 import io
 import base64
 import os
-import csv
 import shutil
 
 app = Flask(__name__)
 
 matplotlib.use('Agg')
-
-def read_weights_from_csv(csv_db: str):
-    weights: list[float] = [] 
-    if os.path.exists(csv_db):
-        with open(csv_db, "r") as f:
-            rows = csv.reader(f)
-            for r in rows:
-                if r:
-                    weights.append(float(r[0]))
-    return weights
 
 def write_json(file_path: str, data):
     with open(file_path, "w") as f:
@@ -35,53 +23,15 @@ def read_json(file_path: str):
             return json.load(f)
     return {}
 
-# use for last_seven and weekly_averages 
-def update_csv(file: str, weights: list[float]):
-    os.remove(file)
-    with open(file, mode='a', newline='') as f:
-        writer = csv.writer(f)
-        for w in weights:
-            writer.writerow([w])
-
 def backup(source, target):
     shutil.copyfile(source, target)
 
-def x_labels(all_weight) -> list[str]:
-    dates: list[str] = list(all_weight.keys())
-    res: list[str] = ["" for _ in range(len(dates) // 7)]
-    index: int = 0
-    for i in range(len(res)):
-        start = dates[index]
-        while index < len(dates) and (index + 1) % 7 != 0:
-            index += 1
-
-        if (index+1) % 7 == 0:
-            end = dates[index]
-            res[i] = f"{start} to {end}"
-            index += 1
-    
-    if len(res) != math.ceil(len(dates) / 7):
-        res.append(f"{dates[index]} to now")
-
-    return res
-
-
-
-def plot_weekly_weights(weekly_averages, all_weights, path: str, backup_path: str):
-    x: list[str] = []
+def plot_weekly_weights(weekly_averages):
     y: list[float] = []
-
-    for k, v in weekly_averages.items():
-        x.append(k)
-        y.append(v)
-    
-
-    # weekly_averages_json_dict = {}
-    # for i in range(len(x)):
-    #     weekly_averages_json_dict[x[i]] = weekly_averages.values()[i]
-
-    # write_json(path, weekly_averages_json_dict)
-    # backup(path, backup_path)
+    x: list[int] = []
+    for _, v in weekly_averages.items():
+        y.append(v[0])
+        x.append(v[1])
 
     fig, ax = plt.subplots()
 
@@ -113,25 +63,27 @@ def update_everything(weekly_weights, new_weight: int, weekly_average, all_weigh
         weekly_avg_keys.append(k)
 
     end_key = weekly_avg_keys[-1]
+    end_week_index = weekly_average[end_key][1]
 
     if len(weekly_weights) == 7:
         average: float = 0
         for k in weekly_weights.values():
             average += k
         average = average / 7
-        weekly_average[end_key] = average
+        weekly_average[end_key] = [average, end_week_index]
 
         weekly_weights = {}
         weekly_weights[selected_date] = new_weight
 
-        weekly_average[f"{selected_date} to now"] = new_weight
+        weekly_average[f"{selected_date} to now"] = [new_weight, end_week_index+1]
     else:
         weekly_weights[selected_date] = new_weight
         average: float = 0
         for k in weekly_weights.values():
             average += k
         average = average / len(weekly_weights.keys())
-        weekly_average[end_key] = average
+        weekly_average[end_key] = [average, end_week_index]
+    
 
     write_json(all_weights_json, all_weights_c)
     write_json(last_seven_json, weekly_weights)
@@ -174,7 +126,7 @@ def index():
         return redirect(url_for('index'))
 
     
-    plot_url = plot_weekly_weights(all_weekly_averages, all_weights, weekly_averages_json, weekly_averages_json_backup)
+    plot_url = plot_weekly_weights(all_weekly_averages)
     return render_template('index.html', plot_url=plot_url, dates=dates)
 
 if __name__ == "__main__":
