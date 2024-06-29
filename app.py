@@ -70,6 +70,21 @@ def update_everything(weekly_weights, new_weight: int, weekly_average, all_weigh
         for k in weekly_weights.values():
             average += k
         average = average / 7
+
+        start_d: str = ""
+        all_weights_ks: list[str] = []
+        for k in all_weights_c.keys():
+            all_weights_ks.append(k)
+        
+        end_d: str = all_weights_ks[len(all_weights_ks) - 2]
+
+        for c in end_key:
+            if c == " ":
+                break
+            start_d += c
+
+        del weekly_average[end_key]
+        end_key = f"{start_d} to {end_d}"
         weekly_average[end_key] = [average, end_week_index]
 
         weekly_weights = {}
