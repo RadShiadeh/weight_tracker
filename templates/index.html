@@ -17,8 +17,16 @@
     <img src="data:image/png;base64,{{ plot_url }}" alt="Plot">
     <p>
         {% for key, value in dict_data.items() %}
-            {{ key }} = {{ value[1] }}<br>
+            {{ key }} = {{ value[1], value[0] }}<br>
         {% endfor %}
     </p>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const duplicate = "{{ duplicate }}";
+            if (duplicate === 'true') {
+                alert("wight for selected date already exists");
+            }
+        });
+    </script>
 </body>
 </html> 

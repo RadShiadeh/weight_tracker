@@ -56,6 +56,9 @@ def plot_weekly_weights(weekly_averages):
     return plot_url
 
 def update_everything(weekly_weights, new_weight: int, weekly_average, all_weights_c, selected_date):
+    if selected_date in all_weights_c.keys():
+        return all_weights_c, weekly_weights, weekly_average, True
+    
     all_weights_c[selected_date] = new_weight
 
     weekly_avg_keys: list[str] = []
@@ -108,7 +111,7 @@ def update_everything(weekly_weights, new_weight: int, weekly_average, all_weigh
     backup(last_seven_json, last_seven_backup)
     backup(weekly_averages_json, weekly_averages_json_backup)
     
-    return all_weights_c, weekly_weights, weekly_average
+    return all_weights_c, weekly_weights, weekly_average, False
 
 
 def generate_dates():
@@ -134,15 +137,20 @@ all_weekly_averages = read_json(weekly_averages_json)
 def index():
     dates = generate_dates()
     global all_weights, last_seven, all_weekly_averages
+    duplicate = request.args.get('duplicate', 'false')
+
     if request.method == 'POST':
         selected_date = request.form['date']
         new_weight = float(request.form['new_weight'])
-        all_weights, last_seven, all_weekly_averages = update_everything(last_seven, new_weight, all_weekly_averages, all_weights, selected_date)
-        return redirect(url_for('index'))
+        all_weights, last_seven, all_weekly_averages, is_duplicate = update_everything(last_seven, new_weight, all_weekly_averages, all_weights, selected_date)
 
+        if is_duplicate:
+            return redirect(url_for('index', duplicate='true'))
+        
+        return redirect(url_for('index'))
     
     plot_url = plot_weekly_weights(all_weekly_averages)
-    return render_template('index.html', plot_url=plot_url, dates=dates, dict_data=all_weekly_averages)
+    return render_template('index.html', plot_url=plot_url, dates=dates, dict_data=all_weekly_averages, duplicate=duplicate)
 
 if __name__ == "__main__":
     app.run(debug=True)
