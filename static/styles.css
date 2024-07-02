@@ -2,6 +2,8 @@ body {
     font-family: Arial, sans-serif;
     text-align: center;
     padding: 20px;
+    background-color: black;
+    color: black;
 }
 
 form {
@@ -11,4 +13,21 @@ form {
 img {
     max-width: 100%;
     height: auto;
+}
+
+form label, form input, form button {
+    background-color: white;
+    border: none;
+    padding: 5px;
+    margin: 5px;
+}
+
+form button {
+    background-color: #4CAF50; 
+    color: black;
+    cursor: pointer;
+}
+
+form button:hover {
+    background-color: #45a049;
 }
