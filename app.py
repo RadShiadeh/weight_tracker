@@ -107,9 +107,9 @@ def update_everything(weekly_weights, new_weight: int, weekly_average, all_weigh
     write_json(last_seven_json, weekly_weights)
     write_json(weekly_averages_json, weekly_average)
 
-    backup(all_weights_json, all_weights_backup)
-    backup(last_seven_json, last_seven_backup)
-    backup(weekly_averages_json, weekly_averages_json_backup)
+    # backup(all_weights_json, all_weights_backup)
+    # backup(last_seven_json, last_seven_backup)
+    # backup(weekly_averages_json, weekly_averages_json_backup)
     
     return all_weights_c, weekly_weights, weekly_average, False
 
