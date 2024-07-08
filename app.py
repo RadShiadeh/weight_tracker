@@ -124,8 +124,7 @@ weekly_averages_csv: str = "./db/weekly_averages_db.csv"
 last_seven_json: str = "./db/last_seven_db.json"
 weekly_averages_json = "./db/weekly_averages_db.json"
 
-all_weights_backup: str = "../weight_tracker_db_backup/all_weights_db.csv"
-weekly_averages_csv_backup: str = "../weight_tracker_db_backup/weekly_averages_db.csv"
+all_weights_backup: str = "../weight_tracker_db_backup/all_weights_db.json"
 last_seven_backup: str = "../weight_tracker_db_backup/last_seven_db.json"
 weekly_averages_json_backup: str = "../weight_tracker_db_backup/weekly_averages_db.json"
 
