@@ -8,6 +8,11 @@ import io
 import base64
 import os
 import shutil
+from pymongo import MongoClient
+
+uri = os.getenv("MONGO_URI")
+mongo = MongoClient(uri)
+db = mongo['Flask_weight_tracker']
 
 app = Flask(__name__)
 
