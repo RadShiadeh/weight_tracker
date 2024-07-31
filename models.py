@@ -1,147 +1,93 @@
 import os
-from werkzeug.security import generate_password_hash, check_password_hash
+import mongoengine as me
+import bcrypt
 from pymongo import MongoClient
+import string_1
+import mongoengine as me
 
-class AllWeights:
-    def __init__(self, date, weight: float) -> None:
-        self.date: str = date
-        self.weight: float = weight
+class AllWeights(me.EmbeddedDocument):
+    date = me.StringField(required=True)
+    weight = me.FloatField(required=True)
 
+    meta = {
+        'collection': 'all_weights',
+        'ordering': ['-date'],
+        'indexes': ['date', 'weight']
+    }
 
-class WeeklyAverages:
-    def __init__(self, date, average: float, index: int) -> None:
-        self.date = date
-        self.average = average
-        self.index = index
+class LastSeven(me.EmbeddedDocument):
+    data = me.DictField(required=True)
+    index = me.IntField(required=True)
 
-class Users:
-    def __init__(self, name, username, email, password):
-        self.name = name
-        self.username = username
-        self.email = email
-        self.password_hash = self.set_password(password)
-        self.all_weights = []
-        self.weekly_averages = []
+    meta = {
+        'collection' : 'last_seven',
+        'ordering': ['index']
+    }
 
-    def set_password(self, password):
-        return generate_password_hash(password)
+class WeeklyAverages(me.EmbeddedDocument):
+    date = me.StringField(required=True)
+    average = me.FloatField(required=True)
+    index = me.IntField(required=True)
 
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
+    meta = {
+        'collection': 'weekly_average',
+        'ordering': ['-index'],
+    }
 
-    def add_weight(self, date, weight):
-        self.all_weights.append(AllWeights(date, weight))
+class User(me.Document):
+    username = me.StringField(required=True, unique=True)
+    password = me.StringField(required=True)
+    email = me.EmailField(required=True, unique=True)
+    all_weights = me.ListField(me.EmbeddedDocumentField(AllWeights), default = [])
+    weekly_avgs = me.ListField(me.EmbeddedDocumentField(WeeklyAverages), default = [])
+    last_seven = me.ListField(me.EmbeddedDocumentField(LastSeven), default = [])
 
-    def add_weekly_average(self, date_range, values):
-        new_index = 1
-        if self.weekly_averages:
-            last_obj = self.weekly_averages[-1]
-            last_index = last_obj.index
-            new_index = last_index + 1
-        
-        self.weekly_averages.append(WeeklyAverages(date_range, values, new_index))
+    meta = {
+        'collection': 'users',
+        'indexes': ['username', 'email']
+    }
 
-    def to_dict(self):
-        all_w = {}
-
-        for obj in self.all_weights:
-            all_w[obj.date] = obj.weight
-
-        all_w_avg = {}
-
-        for obj in self.weekly_averages:
-            all_w_avg[obj.date] = [obj.average, obj.index]
-
-        return {
-            'name': self.name,
-            'username': self.username,
-            'email': self.email,
-            'password_hash': self.password_hash,
-            'all_weights': all_w,
-            'weekly_averages': all_w_avg
-        }
-
-
-
-#testing
-all_weights = {
-    "2024-06-14": 87.7,
-    "2024-06-15": 88.0,
-    "2024-06-16": 88.2,
-    "2024-06-17": 88.0,
-    "2024-06-18": 87.9,
-    "2024-06-19": 87.5,
-    "2024-06-20": 87.9,
-    "2024-06-21": 87.5,
-    "2024-06-22": 87.9,
-    "2024-06-23": 88.0,
-    "2024-06-24": 87.9,
-    "2024-06-25": 88.4,
-    "2024-06-26": 88.2,
-    "2024-06-27": 87.9,
-    "2024-06-28": 87.9,
-    "2024-06-29": 87.9,
-    "2024-06-30": 88.0,
-    "2024-07-01": 88.2,
-    "2024-08-02": 89.0,
-    "2024-07-03": 89.0,
-    "2024-07-04": 89.0,
-    "2024-07-05": 88.0,
-    "2024-07-06": 88.7,
-    "2024-07-07": 88.0,
-    "2024-07-08": 87.9,
-    "2024-07-09": 88.0,
-    "2024-07-10": 88.5,
-    "2024-07-11": 88.3,
-    "2024-07-12": 88.5,
-    "2024-07-13": 88.0,
-    "2024-07-14": 88.9,
-    "2024-07-15": 89.0,
-    "2024-07-16": 87.9,
-    "2024-07-17": 88.0,
-    "2024-07-18": 88.0,
-    "2024-07-19": 88.3
-}
-
-week_avg = {
-    "2024-06-14 to 2024-06-20": [
-        87.88571428571429,
-        1
-    ],
-    "2024-06-21 to 2024-06-27": [
-        87.97142857142856,
-        2
-    ],
-    "2024-06-28 to 2024-07-04": [
-        88.42857142857143,
-        3
-    ],
-    "2024-07-05 to 2024-07-11": [
-        88.2,
-        4
-    ],
-    "2024-07-12 to 2024-07-18": [
-        88.32857142857142,
-        5
-    ],
-    "2024-07-19 to now": [
-        88.3,
-        6
-    ]
-}
+    def clean(self):
+        if self._created or self._changed_fields:
+            self.password = bcrypt.hashpw(str.encode(self.password, 'utf-8'), bcrypt.gensalt()).decode('utf-8')
 
 
 
 
-user = Users("Rad", "rad123", "gradmehr0@...", "123")
-for d, w in all_weights.items():
-    user.add_weight(d, w)
-
-for d, w in week_avg.items():
-    user.add_weekly_average(d, w[0])
 
 
-uri = os.getenv("MONGO_URI")
-client = MongoClient(uri)
-db = client["Flask_weight_tracker"]
-db.users.insert_one(user.to_dict())
+# For testing use
+# ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# def main():
+#     # uri = string_1.ret_uri()
+#     # client = MongoClient(uri)
+#     # db = client["Flask_weight_tracker"]
+#     # collection = db["users"]
+#     # last_seven, all_weights, week_avg = gen_data()
+
+#     # me.connect(host=uri)
+    
+
+#     # new_user = User(
+#     #     username="Rad",
+#     #     email="radurfakelmao@gmail.com",
+#     #     password="09116393920rR",
+#     #     all_weights=[AllWeights(date=d, weight=w) for d, w in all_weights.items()],
+#     #     weekly_avgs=[WeeklyAverages(date=d, average=v[0], index=v[1]) for d, v in week_avg.items()],
+#     #     last_seven=[LastSeven(data=last_seven[0], index=last_seven[1])]
+#     # )
+
+#     # new_user.save()
+    
+#     # user_data = collection.find_one({"username" : "RadShiadeh"})
+#     # if user_data:
+#     #     print("")
+#     # else:
+#     #     print(404)
+#     pass
+
+
+
+
+# if __name__ == "__main__":
+#     main()

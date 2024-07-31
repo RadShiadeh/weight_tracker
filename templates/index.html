@@ -34,8 +34,6 @@
   
     <script>
         const ctx = document.getElementById('myChart').getContext('2d');
-        
-        // Passing the dict_data as a JSON string
         const dictData = JSON.parse('{{ dict_data | tojson | safe }}');
         
         let averages = [];
@@ -83,7 +81,7 @@
                 },
                 plugins: {
                     legend: {
-                        display: true,
+                        display: false,
                         position: 'top'
                     },
                     title: {

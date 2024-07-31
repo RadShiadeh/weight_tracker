@@ -4,10 +4,8 @@ from flask import Flask, render_template, request, redirect, url_for
 import os
 import shutil
 from pymongo import MongoClient
-
-uri = os.getenv("MONGO_URI")
-mongo = MongoClient(uri)
-db = mongo['Flask_weight_tracker']
+import string_1
+from models import User, AllWeights, LastSeven, WeeklyAverages
 
 app = Flask(__name__)
 
@@ -38,9 +36,9 @@ def update_everything(weekly_weights, new_weight: int, weekly_average, all_weigh
     end_key = weekly_avg_keys[-1]
     end_week_index = weekly_average[end_key][1]
 
-    if len(weekly_weights) == 7:
+    if len(weekly_weights[0]['data']) == 7:
         average: float = 0
-        for k in weekly_weights.values():
+        for k in weekly_weights[0]['data'].values():
             average += k
         average = average / 7
 
@@ -60,16 +58,16 @@ def update_everything(weekly_weights, new_weight: int, weekly_average, all_weigh
         end_key = f"{start_d} to {end_d}"
         weekly_average[end_key] = [average, end_week_index]
 
-        weekly_weights = {}
-        weekly_weights[selected_date] = new_weight
+        weekly_weights = [{'data': {}, 'index': weekly_weights[0]['index'] + 1}]
+        weekly_weights[0]['data'][selected_date] = new_weight
 
         weekly_average[f"{selected_date} to now"] = [new_weight, end_week_index+1]
     else:
-        weekly_weights[selected_date] = new_weight
+        weekly_weights[0]['data'][selected_date] = new_weight
         average: float = 0
-        for k in weekly_weights.values():
+        for k in weekly_weights[0]['data'].values():
             average += k
-        average = average / len(weekly_weights.keys())
+        average = average / len(weekly_weights[0]['data'].keys())
         weekly_average[end_key] = [average, end_week_index]
     
 
@@ -77,9 +75,9 @@ def update_everything(weekly_weights, new_weight: int, weekly_average, all_weigh
     write_json(last_seven_json, weekly_weights)
     write_json(weekly_averages_json, weekly_average)
 
-    # backup(all_weights_json, all_weights_backup)
-    # backup(last_seven_json, last_seven_backup)
-    # backup(weekly_averages_json, weekly_averages_json_backup)
+    backup(all_weights_json, all_weights_backup)
+    backup(last_seven_json, last_seven_backup)
+    backup(weekly_averages_json, weekly_averages_json_backup)
     
     return all_weights_c, weekly_weights, weekly_average, False
 
@@ -102,6 +100,21 @@ all_weights = read_json(all_weights_json)
 last_seven = read_json(last_seven_json)
 all_weekly_averages = read_json(weekly_averages_json)
 
+uri = string_1.ret_uri()
+client = MongoClient(uri)
+db = client["test"]
+collection = db["users"]
+
+user_data = collection.find_one({"username": "RadShiadeh"})
+
+if user_data:
+    all_weights = {w["date"]: w["weight"] for w in user_data["all_weights"]}
+    all_weekly_averages = {w["date"]: [w["average"], w["index"]] for w in user_data["weekly_avgs"]}
+    last_seven = user_data["last_seven"]
+else:
+    print("User 'RadShiadeh' not found.")
+    import sys; sys.exit(1)
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     dates = generate_dates()
@@ -116,6 +129,17 @@ def index():
         if is_duplicate:
             return redirect(url_for('index', duplicate='true'))
         
+        collection.update_one(
+            {"username": "RadShiadeh"},
+            {
+                "$set": {
+                    "all_weights": [AllWeights(date=d, weight=w) for d, w in all_weights.items()],
+                    "weekly_avgs": [WeeklyAverages(date=d, average=v[0], index=v[1]) for d, v in all_weekly_averages.items()],
+                    "last_seven": [LastSeven(weights=last_seven[0]['data'], index=last_seven[0]['index'])]
+                }
+            }
+        )
+
         return redirect(url_for('index'))
     
     
