@@ -1,11 +1,6 @@
 from datetime import datetime, timedelta
 import json
 from flask import Flask, render_template, request, redirect, url_for
-import matplotlib
-import matplotlib.pyplot as plt
-from matplotlib.ticker import MaxNLocator
-import io
-import base64
 import os
 import shutil
 from pymongo import MongoClient
@@ -15,8 +10,6 @@ mongo = MongoClient(uri)
 db = mongo['Flask_weight_tracker']
 
 app = Flask(__name__)
-
-matplotlib.use('Agg')
 
 def write_json(file_path: str, data):
     with open(file_path, "w") as f:
@@ -31,34 +24,6 @@ def read_json(file_path: str):
 def backup(source, target):
     shutil.copyfile(source, target)
 
-def plot_weekly_weights(weekly_averages):
-    y: list[float] = []
-    x: list[int] = []
-    for _, v in weekly_averages.items():
-        y.append(v[0])
-        x.append(v[1])
-
-    fig, ax = plt.subplots()
-
-    ax.plot(x, y, marker ='o', linestyle='-', color='r')
-
-    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
-
-    ymin: float = min(y) - 0.5
-    ymax: float = max(y) + 0.5
-    ax.set_ylim([ymin, ymax])
-
-    ax.set_xlabel('week')
-    ax.set_ylabel('Weekly Weight')
-    ax.set_title('Weekly Weight Averages from June 14th')
-    ax.grid(True)
-
-    img = io.BytesIO()
-    plt.savefig(img, format='png')
-    img.seek(0)
-    plot_url = base64.b64encode(img.getvalue()).decode('utf8')
-    plt.close()
-    return plot_url
 
 def update_everything(weekly_weights, new_weight: int, weekly_average, all_weights_c, selected_date):
     if selected_date in all_weights_c.keys():
@@ -153,8 +118,9 @@ def index():
         
         return redirect(url_for('index'))
     
-    plot_url = plot_weekly_weights(all_weekly_averages)
-    return render_template('index.html', plot_url=plot_url, dates=dates, dict_data=all_weekly_averages, duplicate=duplicate)
+    
+    return render_template('index.html', dates=dates, dict_data=all_weekly_averages, duplicate=duplicate)
+
 
 if __name__ == "__main__":
     app.run(debug=True)

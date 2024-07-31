@@ -14,7 +14,9 @@
         <input type="number" id="new_weight" name="new_weight" step="0.1" required>
         <button type="submit">Submit</button>
     </form>
-    <img src="data:image/png;base64,{{ plot_url }}" alt="Plot">
+    <div>
+        <canvas id="myChart"></canvas>
+    </div>
     <p>
         {% for key, value in dict_data.items() %}
             {{ key }} = {{ value[1], value[0] }}<br>
@@ -24,9 +26,73 @@
         document.addEventListener('DOMContentLoaded', function() {
             const duplicate = "{{ duplicate }}";
             if (duplicate === 'true') {
-                alert("wight for selected date already exists");
+                alert("Weight for selected date already exists");
+            }
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+    <script>
+        const ctx = document.getElementById('myChart').getContext('2d');
+        
+        // Passing the dict_data as a JSON string
+        const dictData = JSON.parse('{{ dict_data | tojson | safe }}');
+        
+        let averages = [];
+        let indexes = [];
+        let firstEntery = "";
+
+        for (const [key, value] of Object.entries(dictData)) {
+            if (firstEntery === "") {
+                let val = ""
+                let i = 0
+                while (i < key.length && key[i] !== "t") {
+                    val += key[i];
+                    i++;
+                }
+                firstEntery = val;
+            }
+            averages.push(value[0]);
+            indexes.push(value[1]);
+        }
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: indexes,
+                datasets: [{
+                    label: 'Weekly Weight Averages',
+                    data: averages,
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1,
+                    fill: false,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: false
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Week Index'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    title: {
+                        display: true,
+                        text: `weekly average from ${firstEntery}`
+                    }
+                }
             }
         });
     </script>
 </body>
-</html> 
+</html>
