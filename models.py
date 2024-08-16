@@ -1,6 +1,11 @@
 import mongoengine as me
 import bcrypt
 import mongoengine as me
+# testing imports
+# from gen_data import gen_data
+# from pymongo import MongoClient
+# import string_1
+# import os
 
 class AllWeights(me.EmbeddedDocument):
     date = me.StringField(required=True)
@@ -56,33 +61,62 @@ class User(me.Document):
 
 # For testing use
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
 # def main():
-#     # uri = string_1.ret_uri()
-#     # client = MongoClient(uri)
-#     # db = client["Flask_weight_tracker"]
-#     # collection = db["users"]
-#     # last_seven, all_weights, week_avg = gen_data()
+    # # create a new user
+    #     # uri = string_1.ret_uri()
+    #     # client = MongoClient(uri)
+    #     # db = client["Flask_weight_tracker"]
+    #     # collection = db["users"]
+    #     # last_seven, all_weights, week_avg = gen_data()
 
-#     # me.connect(host=uri)
-    
+    #     # me.connect(host=uri)
+        
 
-#     # new_user = User(
-#     #     username="Rad",
-#     #     email="radurfakelmao@gmail.com",
-#     #     password="09116393920rR",
-#     #     all_weights=[AllWeights(date=d, weight=w) for d, w in all_weights.items()],
-#     #     weekly_avgs=[WeeklyAverages(date=d, average=v[0], index=v[1]) for d, v in week_avg.items()],
-#     #     last_seven=[LastSeven(data=last_seven[0], index=last_seven[1])]
-#     # )
+    #     # new_user = User(
+    #     #     username="Rad",
+    #     #     email="radurfakelmao@gmail.com",
+    #     #     password="09116393920rR",
+    #     #     all_weights=[AllWeights(date=d, weight=w) for d, w in all_weights.items()],
+    #     #     weekly_avgs=[WeeklyAverages(date=d, average=v[0], index=v[1]) for d, v in week_avg.items()],
+    #     #     last_seven=[LastSeven(data=last_seven[0], index=last_seven[1])]
+    #     # )
 
-#     # new_user.save()
-    
-#     # user_data = collection.find_one({"username" : "RadShiadeh"})
-#     # if user_data:
-#     #     print("")
-#     # else:
-#     #     print(404)
-#     pass
+    #     # new_user.save()
+    #------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+    #update an existing user
+    # uri = string_1.ret_uri()
+    # client = MongoClient(uri)
+    # db = client["Flask_weight_tracker"]
+    # collection = db["users"]
+    # last_seven, all_weights, week_avg = gen_data()
+
+    # me.connect(host=uri)
+
+    # existing_user = User.objects(username="RadShiadeh").first()
+    # if existing_user:
+    #     existing_user.all_weights = [
+    #         AllWeights(date=d, weight=w[0], index=w[1])
+    #         for d, w in all_weights.items()
+    #     ]
+
+    #     existing_user.weekly_avgs = [
+    #         WeeklyAverages(date=d, average=v[0], index=v[1])
+    #         for d, v in week_avg.items()
+    #     ]
+
+    #     existing_user.last_seven = [
+    #         LastSeven(data=last_seven[0]["data"], index=last_seven[0]["index"])
+    #     ]
+
+    #     existing_user.save()
+    # else:
+    #     print(f"User 'RadShiadeh' not found in the database.")
 
 
 

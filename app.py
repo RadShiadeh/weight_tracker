@@ -24,10 +24,16 @@ def backup(source, target):
 
 def update_everything(weekly_weights, new_weight: int, weekly_average, all_weights_c, selected_date):
     duplicate = False
+    val = [new_weight, 0]
+    old_weight_entry = new_weight
+
     if selected_date in all_weights_c.keys():
+        i = all_weights_c[selected_date][1]
+        old_weight_entry = all_weights_c[selected_date][0]
+        val = [new_weight, i]
         duplicate = True
     
-    all_weights_c[selected_date][0] = new_weight
+    all_weights_c[selected_date] = val
 
     if not duplicate:
         weekly_avg_keys: list[str] = []
@@ -63,6 +69,7 @@ def update_everything(weekly_weights, new_weight: int, weekly_average, all_weigh
             weekly_weights[0]['data'][selected_date] = new_weight
 
             weekly_average[f"{selected_date} to now"] = [new_weight, end_week_index+1]
+            all_weights_c[selected_date][1] = end_week_index+1
         else:
             weekly_weights[0]['data'][selected_date] = new_weight
             average: float = 0
@@ -71,8 +78,16 @@ def update_everything(weekly_weights, new_weight: int, weekly_average, all_weigh
             average = average / len(weekly_weights[0]['data'].keys())
             weekly_average[end_key] = [average, end_week_index]
     else:
-        #update weekly
-        pass
+        index = val[1]
+        key = ""
+        for k, v in weekly_average.items():
+            if v[1] == index:
+                key = k
+                break
+        
+        pre_average = weekly_average[key][0]
+        post_average = (((pre_average * 7) - old_weight_entry) + new_weight) / 7
+        weekly_average[key][0] = post_average
 
     
 
@@ -114,7 +129,7 @@ user_name = "RadShiadeh"
 user_data = collection.find_one({"username": user_name})
 
 if user_data:
-    all_weights = {w["date"]: w["weight"] for w in user_data["all_weights"]}
+    all_weights = {w["date"]: [w["weight"], w["index"]] for w in user_data["all_weights"]}
     all_weekly_averages = {w["date"]: [w["average"], w["index"]] for w in user_data["weekly_avgs"]}
     last_seven = user_data["last_seven"]
 else:
