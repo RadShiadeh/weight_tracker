@@ -5,7 +5,6 @@ import os
 import shutil
 from pymongo import MongoClient
 import string_1
-from models import User, AllWeights, LastSeven, WeeklyAverages
 
 app = Flask(__name__)
 
@@ -24,51 +23,57 @@ def backup(source, target):
 
 
 def update_everything(weekly_weights, new_weight: int, weekly_average, all_weights_c, selected_date):
+    duplicate = False
     if selected_date in all_weights_c.keys():
-        return all_weights_c, weekly_weights, weekly_average, True
+        duplicate = True
     
-    all_weights_c[selected_date] = new_weight
+    all_weights_c[selected_date][0] = new_weight
 
-    weekly_avg_keys: list[str] = []
-    for k in weekly_average.keys():
-        weekly_avg_keys.append(k)
+    if not duplicate:
+        weekly_avg_keys: list[str] = []
+        for k in weekly_average.keys():
+            weekly_avg_keys.append(k)
 
-    end_key = weekly_avg_keys[-1]
-    end_week_index = weekly_average[end_key][1]
+        end_key = weekly_avg_keys[-1]
+        end_week_index = weekly_average[end_key][1]
 
-    if len(weekly_weights[0]['data']) == 7:
-        average: float = 0
-        for k in weekly_weights[0]['data'].values():
-            average += k
-        average = average / 7
+        if len(weekly_weights[0]['data']) == 7:
+            average: float = 0
+            for k in weekly_weights[0]['data'].values():
+                average += k
+            average = average / 7
 
-        start_d: str = ""
-        all_weights_ks: list[str] = []
-        for k in all_weights_c.keys():
-            all_weights_ks.append(k)
-        
-        end_d: str = all_weights_ks[len(all_weights_ks) - 2]
+            start_d: str = ""
+            all_weights_ks: list[str] = []
+            for k in all_weights_c.keys():
+                all_weights_ks.append(k)
+            
+            end_d: str = all_weights_ks[len(all_weights_ks) - 2]
 
-        for c in end_key:
-            if c == " ":
-                break
-            start_d += c
+            for c in end_key:
+                if c == " ":
+                    break
+                start_d += c
 
-        del weekly_average[end_key]
-        end_key = f"{start_d} to {end_d}"
-        weekly_average[end_key] = [average, end_week_index]
+            del weekly_average[end_key]
+            end_key = f"{start_d} to {end_d}"
+            weekly_average[end_key] = [average, end_week_index]
 
-        weekly_weights = [{'data': {}, 'index': weekly_weights[0]['index'] + 1}]
-        weekly_weights[0]['data'][selected_date] = new_weight
+            weekly_weights = [{'data': {}, 'index': weekly_weights[0]['index'] + 1}]
+            weekly_weights[0]['data'][selected_date] = new_weight
 
-        weekly_average[f"{selected_date} to now"] = [new_weight, end_week_index+1]
+            weekly_average[f"{selected_date} to now"] = [new_weight, end_week_index+1]
+        else:
+            weekly_weights[0]['data'][selected_date] = new_weight
+            average: float = 0
+            for k in weekly_weights[0]['data'].values():
+                average += k
+            average = average / len(weekly_weights[0]['data'].keys())
+            weekly_average[end_key] = [average, end_week_index]
     else:
-        weekly_weights[0]['data'][selected_date] = new_weight
-        average: float = 0
-        for k in weekly_weights[0]['data'].values():
-            average += k
-        average = average / len(weekly_weights[0]['data'].keys())
-        weekly_average[end_key] = [average, end_week_index]
+        #update weekly
+        pass
+
     
 
     write_json(all_weights_json, all_weights_c)
@@ -79,7 +84,7 @@ def update_everything(weekly_weights, new_weight: int, weekly_average, all_weigh
     backup(last_seven_json, last_seven_backup)
     backup(weekly_averages_json, weekly_averages_json_backup)
     
-    return all_weights_c, weekly_weights, weekly_average, False
+    return all_weights_c, weekly_weights, weekly_average, duplicate
 
 
 def generate_dates():
@@ -104,15 +109,16 @@ uri = string_1.ret_uri()
 client = MongoClient(uri)
 db = client["test"]
 collection = db["users"]
+user_name = "RadShiadeh"
 
-user_data = collection.find_one({"username": "RadShiadeh"})
+user_data = collection.find_one({"username": user_name})
 
 if user_data:
     all_weights = {w["date"]: w["weight"] for w in user_data["all_weights"]}
     all_weekly_averages = {w["date"]: [w["average"], w["index"]] for w in user_data["weekly_avgs"]}
     last_seven = user_data["last_seven"]
 else:
-    print("User 'RadShiadeh' not found.")
+    print(f"user {user_name} not found")
     import sys; sys.exit(1)
 
 @app.route('/', methods=['GET', 'POST'])
@@ -134,7 +140,7 @@ def index():
         last_seven_list = [{'data': ls['data'], 'index': ls['index']} for ls in last_seven]
 
         collection.update_one(
-            {"username": "RadShiadeh"},
+            {"username": user_name},
             {
                 "$set": {
                     "all_weights": all_weights_list,

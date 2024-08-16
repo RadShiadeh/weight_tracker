@@ -1,18 +1,16 @@
-import os
 import mongoengine as me
 import bcrypt
-from pymongo import MongoClient
-import string_1
 import mongoengine as me
 
 class AllWeights(me.EmbeddedDocument):
     date = me.StringField(required=True)
     weight = me.FloatField(required=True)
+    index = me.IntField(required=True)
 
     meta = {
         'collection': 'all_weights',
         'ordering': ['-date'],
-        'indexes': ['date', 'weight']
+        'indexes': ['date', 'weight', 'index']
     }
 
 class LastSeven(me.EmbeddedDocument):
