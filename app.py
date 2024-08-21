@@ -5,6 +5,7 @@ import os
 import shutil
 from pymongo import MongoClient
 import string_1
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 
@@ -89,8 +90,6 @@ def update_everything(weekly_weights, new_weight: int, weekly_average, all_weigh
         pre_average = weekly_average[key][0]
         post_average = (((pre_average * 7) - old_weight_entry) + new_weight) / 7
         weekly_average[key][0] = post_average
-    
-    
 
     
 
@@ -103,6 +102,22 @@ def update_everything(weekly_weights, new_weight: int, weekly_average, all_weigh
     backup(weekly_averages_json, weekly_averages_json_backup)
     
     return all_weights_c, weekly_weights, weekly_average, duplicate
+
+
+def auto_fill_missing_dates(all_weights, weekly_averages, last_seven):
+    all_weight_dates = [datetime.strptime(date, "%Y-%m-%d") for date in all_weights.keys()]
+    last_weight_date = max(all_weight_dates)
+
+    last_avg_entry = max(weekly_averages.items(), key=lambda x: x[1][1])
+    last_avg_value = last_avg_entry[1][0]
+
+    today = datetime.today()
+    current_date = last_weight_date + timedelta(days=1)
+
+    while current_date <= today:
+        formatted_date = current_date.strftime("%Y-%m-%d")
+        update_everything(last_seven, last_avg_value, weekly_averages, all_weights, formatted_date)
+        current_date += timedelta(days=1)
 
 
 def generate_dates():
@@ -144,6 +159,7 @@ def index():
     dates = generate_dates()
     global all_weights, last_seven, all_weekly_averages
     duplicate = request.args.get('duplicate', 'false')
+    auto_fill_missing_dates(all_weights,all_weekly_averages, last_seven)
 
     if request.method == 'POST':
         selected_date = request.form['date']
