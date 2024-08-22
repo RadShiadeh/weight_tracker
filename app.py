@@ -88,9 +88,15 @@ def update_everything(weekly_weights, new_weight: int, weekly_average, all_weigh
                 break
         
         pre_average = weekly_average[key][0]
-        post_average = (((pre_average * 7) - old_weight_entry) + new_weight) / 7
+        post_average = 0
+        if selected_date in weekly_weights[0]['data'].keys():
+            weekly_weights[0]['data'][selected_date] = new_weight
+            len_last_seven = len(weekly_weights[0]['data'])
+            post_average = ( ( (pre_average * len_last_seven) - old_weight_entry) + new_weight ) / len_last_seven
+        else:
+            post_average = ( ( (pre_average * 7) - old_weight_entry) + new_weight ) / 7
+        
         weekly_average[key][0] = post_average
-
     
 
     write_json(all_weights_json, all_weights_c)
@@ -111,10 +117,10 @@ def auto_fill_missing_dates(all_weights, weekly_averages, last_seven):
     last_avg_entry = max(weekly_averages.items(), key=lambda x: x[1][1])
     last_avg_value = last_avg_entry[1][0]
 
-    today = datetime.today()
+    yesterday = datetime.today() - timedelta(days=1)
     current_date = last_weight_date + timedelta(days=1)
 
-    while current_date <= today:
+    while current_date <= yesterday:
         formatted_date = current_date.strftime("%Y-%m-%d")
         update_everything(last_seven, last_avg_value, weekly_averages, all_weights, formatted_date)
         current_date += timedelta(days=1)
@@ -134,10 +140,6 @@ all_weights_backup: str = "../weight_tracker_db_backup/all_weights_db.json"
 last_seven_backup: str = "../weight_tracker_db_backup/last_seven_db.json"
 weekly_averages_json_backup: str = "../weight_tracker_db_backup/weekly_averages_db.json"
 
-all_weights = read_json(all_weights_json)
-last_seven = read_json(last_seven_json)
-all_weekly_averages = read_json(weekly_averages_json)
-
 uri = string_1.ret_uri()
 client = MongoClient(uri)
 db = client["test"]
@@ -152,7 +154,11 @@ if user_data:
     last_seven = user_data["last_seven"]
 else:
     print(f"user {user_name} not found")
-    import sys; sys.exit(1)
+
+
+# all_weights = read_json(all_weights_json)
+# all_weekly_averages = read_json(weekly_averages_json)
+# last_seven = read_json(last_seven_json) for local debugging
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
