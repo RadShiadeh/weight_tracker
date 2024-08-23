@@ -14,14 +14,32 @@
         <input type="number" id="new_weight" name="new_weight" step="0.1" required>
         <button type="submit">Submit</button>
     </form>
+    <form method="post" action="/">
+        <div class="container">
+            <div class="dropdown-container">
+                <label for="data-select">Select plot data:</label>
+                <select name="data-select" id="data" onchange="this.form.submit()">
+                    <option value="weekly_averages" {% if selected_data == 'weekly_averages' %}selected{% endif %}>Weekly Averages</option>
+                    <option value="last_seven" {% if selected_data == 'last_seven' %}selected{% endif %}>Last Seven</option>
+                    <option value="all_weights" {% if selected_data == 'all_weights' %}selected{% endif %}>All Weights</option>
+                </select>
+                <div class="tooltip">?
+                    <span class="tooltiptext">This determines what data is plotted</span>
+                </div>
+            </div>
+        </div>
+    </form>    
+
     <div>
         <canvas id="myChart"></canvas>
     </div>
+
     <p>
         {% for key, value in dict_data.items() %}
             {{ key }} = {{ value[1], value[0] }}<br>
         {% endfor %}
     </p>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const duplicate = "{{ duplicate }}";
@@ -35,32 +53,23 @@
     <script>
         const ctx = document.getElementById('myChart').getContext('2d');
         const dictData = JSON.parse('{{ dict_data | tojson | safe }}');
-        
-        let averages = [];
-        let indexes = [];
-        let firstEntery = "";
+
+        let dataValues = [];
+        let labels = [];
+        let chartTitle = "{{ chart_title }}";
 
         for (const [key, value] of Object.entries(dictData)) {
-            if (firstEntery === "") {
-                let val = ""
-                let i = 0
-                while (i < key.length && key[i] !== "t") {
-                    val += key[i];
-                    i++;
-                }
-                firstEntery = val;
-            }
-            averages.push(value[0]);
-            indexes.push(value[1]);
+            dataValues.push(value[0]);
+            labels.push(value[1]);
         }
 
         new Chart(ctx, {
             type: 'line',
             data: {
-                labels: indexes,
+                labels: labels,
                 datasets: [{
-                    label: 'Weekly Weight Averages',
-                    data: averages,
+                    label: chartTitle,
+                    data: dataValues,
                     borderColor: 'rgba(75, 192, 192, 1)',
                     borderWidth: 1,
                     fill: false,
@@ -75,7 +84,7 @@
                     x: {
                         title: {
                             display: true,
-                            text: 'Week Index'
+                            text: 'Date'
                         }
                     }
                 },
@@ -86,11 +95,12 @@
                     },
                     title: {
                         display: true,
-                        text: `weekly average from ${firstEntery}`
+                        text: chartTitle
                     }
                 }
             }
         });
     </script>
+
 </body>
 </html>

@@ -165,35 +165,47 @@ def index():
     dates = generate_dates()
     global all_weights, last_seven, all_weekly_averages
     duplicate = request.args.get('duplicate', 'false')
-    auto_fill_missing_dates(all_weights,all_weekly_averages, last_seven)
+    auto_fill_missing_dates(all_weights, all_weekly_averages, last_seven)
 
+    selected_data = 'weekly_averages'
     if request.method == 'POST':
-        selected_date = request.form['date']
-        new_weight = float(request.form['new_weight'])
-        all_weights, last_seven, all_weekly_averages, is_duplicate = update_everything(last_seven, new_weight, all_weekly_averages, all_weights, selected_date)
+        if 'new_weight' in request.form:
+            selected_date = request.form['date']
+            new_weight = float(request.form['new_weight'])
+            all_weights, last_seven, all_weekly_averages, is_duplicate = update_everything(last_seven, new_weight, all_weekly_averages, all_weights, selected_date)
 
-        if is_duplicate:
-            return redirect(url_for('index', duplicate='true'))
-        
-        all_weights_list = [{'date': d, 'weight': w} for d, w in all_weights.items()]
-        weekly_avgs_list = [{'date': d, 'average': v[0], 'index': v[1]} for d, v in all_weekly_averages.items()]
-        last_seven_list = [{'data': ls['data'], 'index': ls['index']} for ls in last_seven]
+            if is_duplicate:
+                return redirect(url_for('index', duplicate='true'))
+            all_weights_list = [{'date': d, 'weight': w} for d, w in all_weights.items()]
+            weekly_avgs_list = [{'date': d, 'average': v[0], 'index': v[1]} for d, v in all_weekly_averages.items()]
+            last_seven_list = [{'data': ls['data'], 'index': ls['index']} for ls in last_seven]
 
-        collection.update_one(
-            {"username": user_name},
-            {
-                "$set": {
-                    "all_weights": all_weights_list,
-                    "weekly_avgs": weekly_avgs_list,
-                    "last_seven": last_seven_list
+            collection.update_one(
+                {"username": user_name},
+                {
+                    "$set": {
+                        "all_weights": all_weights_list,
+                        "weekly_avgs": weekly_avgs_list,
+                        "last_seven": last_seven_list
+                    }
                 }
-            }
-        )
+            )
+        elif 'data-select' in request.form:
+            selected_data = request.form.get('data-select', 'weekly_averages')
 
-        return redirect(url_for('index'))
-    
-    
-    return render_template('index.html', dates=dates, dict_data=all_weekly_averages, duplicate=duplicate)
+    if selected_data == 'last_seven':
+        dict_data = {date: [value, index] for index, (date, value) in enumerate(last_seven[0]['data'].items(), 1)}
+        chart_title = "Last Seven Entries"
+    elif selected_data == 'all_weights':
+        dict_data = all_weights
+        chart_title = "All Weight Entries"
+    else:
+        dict_data = all_weekly_averages
+        chart_title = "Weekly Averages"
+
+    return render_template('index.html', dates=dates, dict_data=dict_data, duplicate=duplicate, chart_title=chart_title, selected_data=selected_data)
+
+
 
 
 if __name__ == "__main__":
