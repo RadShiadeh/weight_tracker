@@ -8,6 +8,7 @@ import string_1
 from datetime import datetime, timedelta
 
 app = Flask(__name__)
+from users import routes
 
 def write_json(file_path: str, data):
     with open(file_path, "w") as f:
@@ -163,6 +164,10 @@ else:
 @app.route('/login/')
 def login_page():
     return render_template('login.html')
+
+@app.route('/signup/')
+def signup_page():
+    return render_template('signup.html')
 
 @app.route('/', methods=['GET', 'POST'])
 def index():

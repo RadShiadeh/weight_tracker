@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Signup</title>
+        <link rel="stylesheet" href="/static/css/login_styles.css">
+        <link rel="stylesheet" href="/static/css/normalize.css">
+    </head>
+    <body>
+        <div class="card-wrapper">
+            <div class="card">
+                <h1 class="center">create an account</h1>
+                <form name="signup_form">
+                    <label for="username"> username </label>
+                    <input type="text" name="username" class="field" required></input>
+
+                    <label for="email"> email </label>
+                    <input type="text" name="eamil" class="field" required></input>
+
+                    <label for="password"> password </label>
+                    <input type="text" name="password" class="field" required></input>
+
+                    <label for="confrim"> confirm password </label>
+                    <input type="text" name="confrim" class="field" required></input>
+                    
+                    <p class="error error--hidden"></p>
+
+                    <input type="submit" value="sign up" class="btn"></input>
+                </form>
+            </div>
+        </div>
+        <script src="/static/js/jquery.js"></script>
+        <script src="/static/js/scripts.js"></script>
+    </body>
+</html>

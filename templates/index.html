@@ -1,53 +1,53 @@
 <!doctype html>
 <html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>Weekly Weight Tracker</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-</head>
-<body>
-    <h1>Weekly Weight Tracker</h1>
-    <form method="post" action="/">
-        <label for="date">Select Date:</label>
-        <input type="date" id="date" name="date" required>
-        <label for="new_weight">Enter weight:</label>
-        <input type="number" id="new_weight" name="new_weight" step="0.1" required>
-        <button type="submit">Submit</button>
-    </form>
-    <form method="post" action="/">
-        <div class="container">
-            <div class="dropdown-container">
-                <label for="data-select">Select plot data:</label>
-                <select name="data-select" id="data" onchange="this.form.submit()">
-                    <option value="weekly_averages" {% if selected_data == 'weekly_averages' %}selected{% endif %}>Weekly Averages</option>
-                    <option value="last_seven" {% if selected_data == 'last_seven' %}selected{% endif %}>Last Seven</option>
-                    <option value="all_weights" {% if selected_data == 'all_weights' %}selected{% endif %}>All Weights</option>
-                </select>
-                <div class="tooltip">?
-                    <span class="tooltiptext">This determines what data is plotted</span>
+    <head>
+        <meta charset="utf-8">
+        <title>Weekly Weight Tracker</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    </head>
+    <body>
+        <h1>Weekly Weight Tracker</h1>
+        <form method="post" action="/">
+            <label for="date">Select Date:</label>
+            <input type="date" id="date" name="date" required>
+            <label for="new_weight">Enter weight:</label>
+            <input type="number" id="new_weight" name="new_weight" step="0.1" required>
+            <button type="submit">Submit</button>
+        </form>
+        <form method="post" action="/">
+            <div class="container">
+                <div class="dropdown-container">
+                    <label for="data-select">Select plot data:</label>
+                    <select name="data-select" id="data" onchange="this.form.submit()">
+                        <option value="weekly_averages" {% if selected_data == 'weekly_averages' %}selected{% endif %}>Weekly Averages</option>
+                        <option value="last_seven" {% if selected_data == 'last_seven' %}selected{% endif %}>Last Seven</option>
+                        <option value="all_weights" {% if selected_data == 'all_weights' %}selected{% endif %}>All Weights</option>
+                    </select>
+                    <div class="tooltip">?
+                        <span class="tooltiptext">This determines what data is plotted</span>
+                    </div>
                 </div>
             </div>
+        </form>    
+
+        <div>
+            <canvas id="myChart"></canvas>
         </div>
-    </form>    
 
-    <div>
-        <canvas id="myChart"></canvas>
-    </div>
+        <p>
+            {% for key, value in dict_data.items() %}
+                {{ key }} = {{ value[1], value[0] }}<br>
+            {% endfor %}
+        </p>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="{{ url_for('static', filename='js/dup_check.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/plot.js') }}"></script>
+        <script>
+            dup_check("{{ duplicate }}");
+            const dictData = JSON.parse('{{ dict_data | tojson | safe }}');
+            const chartTitle = "{{ chart_title }}";
+            plot(dictData, chartTitle);
+        </script>
 
-    <p>
-        {% for key, value in dict_data.items() %}
-            {{ key }} = {{ value[1], value[0] }}<br>
-        {% endfor %}
-    </p>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="{{ url_for('static', filename='js/dup_check.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/plot.js') }}"></script>
-    <script>
-        dup_check("{{ duplicate }}");
-        const dictData = JSON.parse('{{ dict_data | tojson | safe }}');
-        const chartTitle = "{{ chart_title }}";
-        plot(dictData, chartTitle);
-    </script>
-
-</body>
+    </body>
 </html>
