@@ -160,6 +160,10 @@ else:
 # all_weekly_averages = read_json(weekly_averages_json)
 # last_seven = read_json(last_seven_json) for local debugging
 
+@app.route('/login/')
+def login_page():
+    return render_template('login.html')
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     dates = generate_dates()
@@ -176,6 +180,7 @@ def index():
 
             if is_duplicate:
                 return redirect(url_for('index', duplicate='true'))
+            
             all_weights_list = [{'date': d, 'weight': w} for d, w in all_weights.items()]
             weekly_avgs_list = [{'date': d, 'average': v[0], 'index': v[1]} for d, v in all_weekly_averages.items()]
             last_seven_list = [{'data': ls['data'], 'index': ls['index']} for ls in last_seven]

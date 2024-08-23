@@ -39,67 +39,14 @@
             {{ key }} = {{ value[1], value[0] }}<br>
         {% endfor %}
     </p>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const duplicate = "{{ duplicate }}";
-            if (duplicate === 'true') {
-                alert("Weight for selected date already exists, updating it to the new entry");
-            }
-        });
-    </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  
+    <script src="{{ url_for('static', filename='js/dup_check.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/plot.js') }}"></script>
     <script>
-        const ctx = document.getElementById('myChart').getContext('2d');
+        dup_check("{{ duplicate }}");
         const dictData = JSON.parse('{{ dict_data | tojson | safe }}');
-
-        let dataValues = [];
-        let labels = [];
-        let chartTitle = "{{ chart_title }}";
-
-        for (const [key, value] of Object.entries(dictData)) {
-            dataValues.push(value[0]);
-            labels.push(value[1]);
-        }
-
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: chartTitle,
-                    data: dataValues,
-                    borderColor: 'rgba(75, 192, 192, 1)',
-                    borderWidth: 1,
-                    fill: false,
-                    tension: 0.1
-                }]
-            },
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: false
-                    },
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Date'
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: false,
-                        position: 'top'
-                    },
-                    title: {
-                        display: true,
-                        text: chartTitle
-                    }
-                }
-            }
-        });
+        const chartTitle = "{{ chart_title }}";
+        plot(dictData, chartTitle);
     </script>
 
 </body>
