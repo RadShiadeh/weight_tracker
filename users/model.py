@@ -1,7 +1,8 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 import mongoengine as me
 from users_data import models
 import bcrypt
+from app import db
 
 
 class User(me.Document):
@@ -13,7 +14,7 @@ class User(me.Document):
     last_seven = me.ListField(me.EmbeddedDocumentField(models.LastSeven), default = [])
 
     meta = {
-        'collection': 'users',
+        'collection': 'users_signup_test', #change this for prod
         'indexes': ['username', 'email']
     }
 
@@ -22,16 +23,26 @@ class User(me.Document):
             self.password = bcrypt.hashpw(str.encode(self.password, 'utf-8'), bcrypt.gensalt()).decode('utf-8')
     
     def signup(self):
-        return
+        user_json = {
+            "username": request.form.get("username"),
+            "password": request.form.get("password"),
+            "email": request.form.get("email"),
+            "all_weights": self.all_weights,
+            "weekly_avgs": self.weekly_avgs,
+            "last_seven": self.last_seven
+        }
+
+        new_user = User(username=user_json["username"],
+                        password=user_json["password"],
+                        email=user_json["email"],
+                        all_weights=user_json["all_weights"],
+                        weekly_avgs=user_json["weekly_avgs"],
+                        last_seven=user_json["last_seven"])
+        
+        collection = db["users_signup_test"]
+        collection.insert_one(new_user.to_mongo())
+
+        return user_json
     
     def login(self):
         return
-
-
-    def user_details(self):
-        user = {
-            "_id": "",
-            "username": "self.username",
-            "email": "self.email"
-        }
-        return jsonify(user), 200

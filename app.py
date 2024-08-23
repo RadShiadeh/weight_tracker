@@ -8,7 +8,6 @@ import string_1
 from datetime import datetime, timedelta
 
 app = Flask(__name__)
-from users import routes
 
 def write_json(file_path: str, data):
     with open(file_path, "w") as f:
@@ -144,6 +143,9 @@ weekly_averages_json_backup: str = "../weight_tracker_db_backup/weekly_averages_
 uri = string_1.ret_uri()
 client = MongoClient(uri)
 db = client["test"]
+
+from users import routes
+
 collection = db["users"]
 user_name = "RadShiadeh"
 
@@ -186,20 +188,20 @@ def index():
             if is_duplicate:
                 return redirect(url_for('index', duplicate='true'))
             
-            all_weights_list = [{'date': d, 'weight': w} for d, w in all_weights.items()]
-            weekly_avgs_list = [{'date': d, 'average': v[0], 'index': v[1]} for d, v in all_weekly_averages.items()]
-            last_seven_list = [{'data': ls['data'], 'index': ls['index']} for ls in last_seven]
+            # all_weights_list = [{'date': d, 'weight': w} for d, w in all_weights.items()]
+            # weekly_avgs_list = [{'date': d, 'average': v[0], 'index': v[1]} for d, v in all_weekly_averages.items()]
+            # last_seven_list = [{'data': ls['data'], 'index': ls['index']} for ls in last_seven]
 
-            collection.update_one(
-                {"username": user_name},
-                {
-                    "$set": {
-                        "all_weights": all_weights_list,
-                        "weekly_avgs": weekly_avgs_list,
-                        "last_seven": last_seven_list
-                    }
-                }
-            )
+            # collection.update_one(
+            #     {"username": user_name},
+            #     {
+            #         "$set": {
+            #             "all_weights": all_weights_list,
+            #             "weekly_avgs": weekly_avgs_list,
+            #             "last_seven": last_seven_list
+            #         }
+            #     }
+            # )
         elif 'data-select' in request.form:
             selected_data = request.form.get('data-select', 'weekly_averages')
 

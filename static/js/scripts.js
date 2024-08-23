@@ -1,43 +1,19 @@
 $("form[name=signup_form").submit(function(e) {
+    var $form = $(this);
+    var $error = $form.find(".error");
+    var data = $form.serialize();
 
-    var $form = $(this);
-    var $error = $form.find(".error");
-    var data = $form.serialize();
-  
     $.ajax({
-      url: "/user/signup",
-      type: "POST",
-      data: data,
-      dataType: "json",
-      success: function(resp) {
-        window.location.href = "/dashboard/";
-      },
-      error: function(resp) {
-        $error.text(resp.responseJSON.error).removeClass("error--hidden");
-      }
+        url: "/users/signup",
+        type: "POST",
+        data: data,
+        success: function(response) {
+            console.log(response)
+        },
+        error: function(res) {
+            console.log(res)
+        }
     });
-  
+
     e.preventDefault();
-  });
-  
-  $("form[name=login_form").submit(function(e) {
-  
-    var $form = $(this);
-    var $error = $form.find(".error");
-    var data = $form.serialize();
-  
-    $.ajax({
-      url: "/user/login",
-      type: "POST",
-      data: data,
-      dataType: "json",
-      success: function(resp) {
-        window.location.href = "/dashboard/";
-      },
-      error: function(resp) {
-        $error.text(resp.responseJSON.error).removeClass("error--hidden");
-      }
-    });
-  
-    e.preventDefault();
-  });
+});
