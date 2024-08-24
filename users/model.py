@@ -19,10 +19,11 @@ class User(me.Document):
         'indexes': ['username', 'email']
     }
 
-    def clean(self):
-        if self._created or self._changed_fields:
-            self.password = bcrypt.hashpw(str.encode(self.password, 'utf-8'), bcrypt.gensalt()).decode('utf-8')
-
+    def start_session(self, user):
+        session = {"logged_in": False, "user": None}
+        session['logged_in'] = True
+        session["user"] = user
+        return user, 200
 
     def has_sql_keywords(self, input_str):
         sql_keywords = ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'DROP', 'TRUNCATE', 'ALTER']
@@ -46,19 +47,23 @@ class User(me.Document):
         if len(user_json["password"]) < 8:
             return jsonify({"error": "Password must be at least 8 characters long"}), 400
 
+        if len(user_json["username"]) < 4:
+            return jsonify({"error": "username must be at least 4 characters long"}), 400
+
         confirmed_pass = request.form.get("confirm")
 
         if confirmed_pass != user_json['password']:
             return jsonify({"error": "Passwords do not match"}), 400
 
         collection = db["users_signup_test"]
-        
+
         if collection.find_one({"username": user_json["username"]}):
             return jsonify({"error": "Username already in use"}), 400
 
         if collection.find_one({"email": user_json["email"]}):
             return jsonify({"error": "Email already in use"}), 400
         
+        user_json["password"] = bcrypt.hashpw(str.encode(user_json["password"], 'utf-8'), bcrypt.gensalt()).decode('utf-8')
         new_user = User(username=user_json["username"],
                         password=user_json["password"],
                         email=user_json["email"],
@@ -67,7 +72,7 @@ class User(me.Document):
                         last_seven=user_json["last_seven"])
 
         if collection.insert_one(new_user.to_mongo()):
-            return user_json, 201
+            return self.start_session(user=user_json)
 
         return jsonify({"error": "signup failed"}), 400
 

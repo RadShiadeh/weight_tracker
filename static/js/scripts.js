@@ -8,10 +8,9 @@ $("form[name=signup_form").submit(function(e) {
         type: "POST",
         data: data,
         success: function(response) {
-            console.log(response)
+            window.location.href = "/"
         },
         error: function(res) {
-            console.log(res)
             $error.text(res.responseJSON.error).removeClass("error--hidden")
         }
     });
