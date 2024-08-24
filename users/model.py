@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, session, redirect
 import mongoengine as me
 from users_data import models
 import bcrypt
@@ -20,7 +20,7 @@ class User(me.Document):
     }
 
     def start_session(self, user):
-        session = {"logged_in": False, "user": None}
+        del user["password"]
         session['logged_in'] = True
         session["user"] = user
         return user, 200
@@ -75,7 +75,22 @@ class User(me.Document):
             return self.start_session(user=user_json)
 
         return jsonify({"error": "signup failed"}), 400
+    
+    def signout(self):
+        session.clear()
+        return redirect('/')
 
     
     def login(self):
-        return
+        user_json = {
+            "username": request.form.get("username"),
+            "password": request.form.get("password")
+        }
+
+        collection = db["users"]
+        user = collection.find_one({"username": user_json["username"]})
+
+        if user:
+            return self.start_session(user)
+        else:
+            return jsonify({"error": "Invalid username or password"}), 401

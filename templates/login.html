@@ -2,11 +2,30 @@
 <html lang="en">
     <head>
         <meta charset="utf-8">
-        <title>login</title>
+        <title>weight tracker</title>
         <link rel="stylesheet" href="/static/css/login_styles.css">
         <link rel="stylesheet" href="/static/css/normalize.css">
     </head>
     <body>
+        <div class="card-wrapper">
+            <div class="card">
+                <h1 class="center">login</h1>
+                <form name="login_form">
+                    <label for="username"> username </label>
+                    <input type="text" name="username" class="field" required></input>
+
+                    <label for="password"> password </label>
+                    <input type="password" name="password" class="field" required></input>
+                    
+                    <p class="error error--hidden"></p>
+
+                    <input type="submit" value="login" class="btn"></input>
+                </form>
+                <div>
+                    <p>Dont have an account? <a href="/">signup</a></p>
+                </div>
+            </div>
+        </div>
         <script src="/static/js/jquery.js"></script>
         <script src="/static/js/scripts.js"></script>
     </body>

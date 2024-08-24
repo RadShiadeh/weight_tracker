@@ -85,3 +85,22 @@ form button:hover {
     visibility: visible;
     opacity: 1;
 }
+
+.signout-button {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+}
+
+.btn {
+    padding: 10px 20px;
+    text-decoration: none;
+    color: white;
+    background-color: #007BFF;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+.btn:hover {
+    background-color: #0056b3;
+}

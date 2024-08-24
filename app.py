@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 import json
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, session
+from functools import wraps
 import os
 import shutil
 from pymongo import MongoClient
@@ -8,6 +9,7 @@ import string_1
 from datetime import datetime, timedelta
 
 app = Flask(__name__)
+app.secret_key = b'\xd0ud\x86*\xe0\xf3\x87\x9a\x1a[Vu\xec\xc2]'
 
 def write_json(file_path: str, data):
     with open(file_path, "w") as f:
@@ -131,6 +133,16 @@ def generate_dates():
     dates = [(today - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(7)]
     return dates
 
+def login_required(f):
+    @wraps(f)
+    def wrap(*args, **kwargs):
+        if 'logged_in' in session:
+            return f(*args, **kwargs)
+        else:
+            return redirect('/')
+    
+    return wrap
+
 all_weights_json: str = "./db/all_weights_db.json"
 weekly_averages_csv: str = "./db/weekly_averages_db.csv"
 last_seven_json: str = "./db/last_seven_db.json"
@@ -143,20 +155,7 @@ weekly_averages_json_backup: str = "../weight_tracker_db_backup/weekly_averages_
 uri = string_1.ret_uri()
 client = MongoClient(uri)
 db = client["test"]
-
 from users import routes
-
-collection = db["users"]
-user_name = "RadShiadeh"
-
-user_data = collection.find_one({"username": user_name})
-
-if user_data:
-    all_weights = {w["date"]: [w["weight"][0], w["weight"][1]] for w in user_data["all_weights"]}
-    all_weekly_averages = {w["date"]: [w["average"], w["index"]] for w in user_data["weekly_avgs"]}
-    last_seven = user_data["last_seven"]
-else:
-    print(f"user {user_name} not found")
 
 
 # all_weights = read_json(all_weights_json)
@@ -167,16 +166,30 @@ else:
 def login_page():
     return render_template('login.html')
 
-@app.route('/signup/')
+@app.route('/')
 def signup_page():
     return render_template('signup.html')
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/home/', methods=['GET', 'POST'])
+@login_required
 def index():
     dates = generate_dates()
     global all_weights, last_seven, all_weekly_averages
+
+    user_name = session["user"]["username"] #needs to change
+    collection = db["users_signup_test"]
+    user_data = collection.find_one({"username": user_name})
+
+    if user_data:
+        all_weights = {w["date"]: [w["weight"][0], w["weight"][1]] for w in user_data["all_weights"]}
+        all_weekly_averages = {w["date"]: [w["average"], w["index"]] for w in user_data["weekly_avgs"]}
+        last_seven = user_data["last_seven"]
+    else:
+        print(f"user {user_name} not found")
+        
     duplicate = request.args.get('duplicate', 'false')
-    auto_fill_missing_dates(all_weights, all_weekly_averages, last_seven)
+    if all_weights and all_weekly_averages:
+        auto_fill_missing_dates(all_weights, all_weekly_averages, last_seven)
 
     selected_data = 'weekly_averages'
     if request.method == 'POST':
@@ -204,16 +217,19 @@ def index():
             # )
         elif 'data-select' in request.form:
             selected_data = request.form.get('data-select', 'weekly_averages')
-
-    if selected_data == 'last_seven':
-        dict_data = {date: [value, index] for index, (date, value) in enumerate(last_seven[0]['data'].items(), 1)}
-        chart_title = "Last Seven Entries"
-    elif selected_data == 'all_weights':
-        dict_data = all_weights
-        chart_title = "All Weight Entries"
-    else:
-        dict_data = all_weekly_averages
-        chart_title = "Weekly Averages"
+    
+    dict_data = {}
+    chart_title = ""
+    if all_weights and all_weekly_averages:
+        if selected_data == 'last_seven' and last_seven:
+            dict_data = {date: [value, index] for index, (date, value) in enumerate(last_seven[0]['data'].items(), 1)}
+            chart_title = "Last Seven Entries"
+        elif selected_data == 'all_weights':
+            dict_data = all_weights
+            chart_title = "All Weight Entries"
+        else:
+            dict_data = all_weekly_averages
+            chart_title = "Weekly Averages"
 
     return render_template('index.html', dates=dates, dict_data=dict_data, duplicate=duplicate, chart_title=chart_title, selected_data=selected_data)
 
