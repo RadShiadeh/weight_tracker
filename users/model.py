@@ -15,7 +15,7 @@ class User(me.Document):
     last_seven = me.ListField(me.EmbeddedDocumentField(models.LastSeven), default = [])
 
     meta = {
-        'collection': 'users', #change this for prod
+        'collection': 'users',
         'indexes': ['username', 'email']
     }
 
@@ -92,13 +92,17 @@ class User(me.Document):
 
         collection = db["users"]
         user = collection.find_one({"username": user_json["username"]})
-        user_json["username"] = user["username"]
-        user_json["email"] = user["email"]
-        user_json["all_weights"] = user["all_weights"]
-        user_json["weekly_avgs"] = user["weekly_avgs"]
-        user_json["last_seven"] = user["last_seven"]
 
         if user:
-            return self.start_session(user_json)
+            if bcrypt.checkpw(user_json["password"].encode('utf-8'), user["password"].encode('utf-8')):
+                user_json["username"] = user["username"]
+                user_json["email"] = user["email"]
+                user_json["all_weights"] = user["all_weights"]
+                user_json["weekly_avgs"] = user["weekly_avgs"]
+                user_json["last_seven"] = user["last_seven"]
+
+                return self.start_session(user_json)
+            else:
+                return jsonify({"error": "wrong password"}), 400
         else:
             return jsonify({"error": "Invalid username or password"}), 400

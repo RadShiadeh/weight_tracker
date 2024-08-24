@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import datetime, timedelta
 import json
 from flask import Flask, render_template, request, redirect, url_for, session
@@ -26,6 +27,13 @@ def backup(source, target):
 
 
 def update_everything(weekly_weights, new_weight: int, weekly_average, all_weights_c, selected_date):
+    if not weekly_average:
+        k = str(selected_date) + " to " + "now"
+        weekly_average[k] = [new_weight, 1]
+        all_weights_c[selected_date] = [new_weight, 1]
+        weekly_weights = [{'data': {selected_date: new_weight}, 'index': 1}]
+        return all_weights_c, weekly_weights, weekly_average, False
+
     duplicate = False
     val = [new_weight, 0]
     old_weight_entry = new_weight
@@ -42,7 +50,7 @@ def update_everything(weekly_weights, new_weight: int, weekly_average, all_weigh
         weekly_avg_keys: list[str] = []
         for k in weekly_average.keys():
             weekly_avg_keys.append(k)
-
+    
         end_key = weekly_avg_keys[-1]
         end_week_index = weekly_average[end_key][1]
 
@@ -127,6 +135,63 @@ def auto_fill_missing_dates(all_weights, weekly_averages, last_seven):
         update_everything(last_seven, last_avg_value, weekly_averages, all_weights, formatted_date)
         current_date += timedelta(days=1)
 
+    
+def auto_fill_prior_dates(all_weights, entery_date, val):
+    all_weight_dates = [datetime.strptime(date, "%Y-%m-%d") for date in all_weights.keys()]
+    first_weight_date = min(all_weight_dates)
+
+    entery_date_obj = datetime.strptime(entery_date, "%Y-%m-%d")
+    index = 1
+    c = 1
+
+    while entery_date_obj < first_weight_date:
+        formatted_date = entery_date_obj.strftime("%Y-%m-%d")
+        all_weights[formatted_date] = [val, index]
+        c+=1
+        if c == 7:
+            index += 1
+            c = 1
+        entery_date_obj += timedelta(days=1)
+
+def reorder_indexs(all_weights):
+    all_weight_dates = sorted([datetime.strptime(date, "%Y-%m-%d") for date in all_weights.keys()])
+    temp = {}
+    index = 1
+    c = 0
+    for d in all_weight_dates:
+        str_date = d.strftime('%Y-%m-%d')
+        weight = all_weights[str_date][0]
+        
+        if c == 7:
+            c = 0
+            index += 1
+        
+        c += 1
+        temp[str_date] = [weight, index]
+
+    return temp
+
+def update_weekly_averages(all_weights):
+    grouped_weights = defaultdict(list)
+    max_index = 0
+    for date, (weight, index) in all_weights.items():
+        max_index = max(max_index, index)
+        grouped_weights[index].append((date, weight))
+    
+    weekly_averages = {}
+    for index, values in grouped_weights.items():
+        dates = [datetime.strptime(date, "%Y-%m-%d") for date, _ in values]
+        min_date = min(dates).strftime('%Y-%m-%d')
+        max_date = max(dates).strftime('%Y-%m-%d')
+        avg_weight = sum(weight for _, weight in values) / len(values)
+        key = f"{min_date} to {max_date}"
+        
+        if index == max_index:
+            key = f"{min_date} to now"
+
+        weekly_averages[key] = [avg_weight, index]
+    
+    return weekly_averages
 
 def generate_dates():
     today = datetime.today()
@@ -176,7 +241,7 @@ def index():
     dates = generate_dates()
     global all_weights, last_seven, all_weekly_averages
 
-    user_name = session["user"]["username"] #needs to change
+    user_name = session["user"]["username"]
     collection = db["users"]
     user_data = collection.find_one({"username": user_name})
 
@@ -186,6 +251,7 @@ def index():
         last_seven = user_data["last_seven"]
     else:
         print(f"user {user_name} not found")
+
         
     duplicate = request.args.get('duplicate', 'false')
     if all_weights and all_weekly_averages:
@@ -195,8 +261,19 @@ def index():
     if request.method == 'POST':
         if 'new_weight' in request.form:
             selected_date = request.form['date']
+            all_weight_dates = [datetime.strptime(date, "%Y-%m-%d") for date in all_weights.keys()]
+            earliest_entry = min(all_weight_dates)
+            selected_date_obj = datetime.strptime(selected_date, "%Y-%m-%d")
+            
             new_weight = float(request.form['new_weight'])
-            all_weights, last_seven, all_weekly_averages, is_duplicate = update_everything(last_seven, new_weight, all_weekly_averages, all_weights, selected_date)
+            is_duplicate = False
+
+            if earliest_entry > selected_date_obj:
+                auto_fill_prior_dates(all_weights, selected_date, new_weight)
+                all_weights = reorder_indexs(all_weights)
+                all_weekly_averages = update_weekly_averages(all_weights)
+            else:
+                all_weights, last_seven, all_weekly_averages, is_duplicate = update_everything(last_seven, new_weight, all_weekly_averages, all_weights, selected_date)
 
             if is_duplicate:
                 return redirect(url_for('index', duplicate='true'))
