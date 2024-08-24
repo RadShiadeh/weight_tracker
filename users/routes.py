@@ -6,6 +6,10 @@ from users.model import User
 def signup():
     return User().signup()
 
-@app.route('/users/singout')
+@app.route('/users/signout')
 def signout():
     return User().signout()
+
+@app.route('/users/login', methods=["POST"])
+def login():
+    return User().login()

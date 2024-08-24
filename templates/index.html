@@ -7,7 +7,8 @@
     </head>
     <body>
         <div class="signout-button">
-            <a href="/users/singout" class="btn">Sign Out</a>
+            <script src="{{ url_for('static', filename='js/signOutAlert.js') }}"></script>
+            <a href="/users/signout" class="btn" onclick="signOutAlert(event)">Sign Out</a>
         </div>
         <h1>
             Weekly Weight Tracker

@@ -15,7 +15,7 @@ class User(me.Document):
     last_seven = me.ListField(me.EmbeddedDocumentField(models.LastSeven), default = [])
 
     meta = {
-        'collection': 'users_signup_test', #change this for prod
+        'collection': 'users', #change this for prod
         'indexes': ['username', 'email']
     }
 
@@ -55,7 +55,7 @@ class User(me.Document):
         if confirmed_pass != user_json['password']:
             return jsonify({"error": "Passwords do not match"}), 400
 
-        collection = db["users_signup_test"]
+        collection = db["users"]
 
         if collection.find_one({"username": user_json["username"]}):
             return jsonify({"error": "Username already in use"}), 400
@@ -84,13 +84,21 @@ class User(me.Document):
     def login(self):
         user_json = {
             "username": request.form.get("username"),
-            "password": request.form.get("password")
+            "password": request.form.get("password"),
+            "all_weights": [],
+            "weekly_avgs": [],
+            "last_seven": []
         }
 
         collection = db["users"]
         user = collection.find_one({"username": user_json["username"]})
+        user_json["username"] = user["username"]
+        user_json["email"] = user["email"]
+        user_json["all_weights"] = user["all_weights"]
+        user_json["weekly_avgs"] = user["weekly_avgs"]
+        user_json["last_seven"] = user["last_seven"]
 
         if user:
-            return self.start_session(user)
+            return self.start_session(user_json)
         else:
-            return jsonify({"error": "Invalid username or password"}), 401
+            return jsonify({"error": "Invalid username or password"}), 400
