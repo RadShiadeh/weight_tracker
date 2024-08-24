@@ -3,6 +3,7 @@ import mongoengine as me
 from users_data import models
 import bcrypt
 from app import db
+import re
 
 
 class User(me.Document):
@@ -21,6 +22,13 @@ class User(me.Document):
     def clean(self):
         if self._created or self._changed_fields:
             self.password = bcrypt.hashpw(str.encode(self.password, 'utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+
+    def has_sql_keywords(self, input_str):
+        sql_keywords = ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'DROP', 'TRUNCATE', 'ALTER']
+        pattern = re.compile('|'.join(sql_keywords), re.IGNORECASE)
+        return bool(pattern.search(input_str))
+
     
     def signup(self):
         user_json = {
@@ -32,17 +40,37 @@ class User(me.Document):
             "last_seven": self.last_seven
         }
 
+        if any(self.has_sql_keywords(user_json[field]) for field in ['username', 'email', 'password']):
+            return jsonify({"error": "Invalid input detected, you are using reserved key words in your email, password or username"}), 400
+
+        if len(user_json["password"]) < 8:
+            return jsonify({"error": "Password must be at least 8 characters long"}), 400
+
+        confirmed_pass = request.form.get("confirm")
+
+        if confirmed_pass != user_json['password']:
+            return jsonify({"error": "Passwords do not match"}), 400
+
+        collection = db["users_signup_test"]
+        
+        if collection.find_one({"username": user_json["username"]}):
+            return jsonify({"error": "Username already in use"}), 400
+
+        if collection.find_one({"email": user_json["email"]}):
+            return jsonify({"error": "Email already in use"}), 400
+        
         new_user = User(username=user_json["username"],
                         password=user_json["password"],
                         email=user_json["email"],
                         all_weights=user_json["all_weights"],
                         weekly_avgs=user_json["weekly_avgs"],
                         last_seven=user_json["last_seven"])
-        
-        collection = db["users_signup_test"]
-        collection.insert_one(new_user.to_mongo())
 
-        return user_json
+        if collection.insert_one(new_user.to_mongo()):
+            return user_json, 201
+
+        return jsonify({"error": "signup failed"}), 400
+
     
     def login(self):
         return
