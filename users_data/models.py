@@ -1,6 +1,4 @@
 import mongoengine as me
-import bcrypt
-import mongoengine as me
 # testing imports
 # from gen_data import gen_data
 # from pymongo import MongoClient
@@ -36,23 +34,6 @@ class WeeklyAverages(me.EmbeddedDocument):
         'collection': 'weekly_average',
         'ordering': ['-index'],
     }
-
-class User(me.Document):
-    username = me.StringField(required=True, unique=True)
-    password = me.StringField(required=True)
-    email = me.EmailField(required=True, unique=True)
-    all_weights = me.ListField(me.EmbeddedDocumentField(AllWeights), default = [])
-    weekly_avgs = me.ListField(me.EmbeddedDocumentField(WeeklyAverages), default = [])
-    last_seven = me.ListField(me.EmbeddedDocumentField(LastSeven), default = [])
-
-    meta = {
-        'collection': 'users',
-        'indexes': ['username', 'email']
-    }
-
-    def clean(self):
-        if self._created or self._changed_fields:
-            self.password = bcrypt.hashpw(str.encode(self.password, 'utf-8'), bcrypt.gensalt()).decode('utf-8')
 
 
 

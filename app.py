@@ -1,6 +1,8 @@
+from collections import defaultdict
 from datetime import datetime, timedelta
 import json
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, session
+from functools import wraps
 import os
 import shutil
 from pymongo import MongoClient
@@ -8,6 +10,7 @@ import string_1
 from datetime import datetime, timedelta
 
 app = Flask(__name__)
+app.secret_key = b'\xd0ud\x86*\xe0\xf3\x87\x9a\x1a[Vu\xec\xc2]'
 
 def write_json(file_path: str, data):
     with open(file_path, "w") as f:
@@ -24,6 +27,13 @@ def backup(source, target):
 
 
 def update_everything(weekly_weights, new_weight: int, weekly_average, all_weights_c, selected_date):
+    if not weekly_average:
+        k = str(selected_date) + " to " + "now"
+        weekly_average[k] = [new_weight, 1]
+        all_weights_c[selected_date] = [new_weight, 1]
+        weekly_weights = [{'data': {selected_date: new_weight}, 'index': 1}]
+        return all_weights_c, weekly_weights, weekly_average, False
+
     duplicate = False
     val = [new_weight, 0]
     old_weight_entry = new_weight
@@ -40,7 +50,7 @@ def update_everything(weekly_weights, new_weight: int, weekly_average, all_weigh
         weekly_avg_keys: list[str] = []
         for k in weekly_average.keys():
             weekly_avg_keys.append(k)
-
+    
         end_key = weekly_avg_keys[-1]
         end_week_index = weekly_average[end_key][1]
 
@@ -125,11 +135,78 @@ def auto_fill_missing_dates(all_weights, weekly_averages, last_seven):
         update_everything(last_seven, last_avg_value, weekly_averages, all_weights, formatted_date)
         current_date += timedelta(days=1)
 
+    
+def auto_fill_prior_dates(all_weights, entery_date, val):
+    all_weight_dates = [datetime.strptime(date, "%Y-%m-%d") for date in all_weights.keys()]
+    first_weight_date = min(all_weight_dates)
+
+    entery_date_obj = datetime.strptime(entery_date, "%Y-%m-%d")
+    index = 1
+    c = 1
+
+    while entery_date_obj < first_weight_date:
+        formatted_date = entery_date_obj.strftime("%Y-%m-%d")
+        all_weights[formatted_date] = [val, index]
+        c+=1
+        if c == 7:
+            index += 1
+            c = 1
+        entery_date_obj += timedelta(days=1)
+
+def reorder_indexs(all_weights):
+    all_weight_dates = sorted([datetime.strptime(date, "%Y-%m-%d") for date in all_weights.keys()])
+    temp = {}
+    index = 1
+    c = 0
+    for d in all_weight_dates:
+        str_date = d.strftime('%Y-%m-%d')
+        weight = all_weights[str_date][0]
+        
+        if c == 7:
+            c = 0
+            index += 1
+        
+        c += 1
+        temp[str_date] = [weight, index]
+
+    return temp
+
+def update_weekly_averages(all_weights):
+    grouped_weights = defaultdict(list)
+    max_index = 0
+    for date, (weight, index) in all_weights.items():
+        max_index = max(max_index, index)
+        grouped_weights[index].append((date, weight))
+    
+    weekly_averages = {}
+    for index, values in grouped_weights.items():
+        dates = [datetime.strptime(date, "%Y-%m-%d") for date, _ in values]
+        min_date = min(dates).strftime('%Y-%m-%d')
+        max_date = max(dates).strftime('%Y-%m-%d')
+        avg_weight = sum(weight for _, weight in values) / len(values)
+        key = f"{min_date} to {max_date}"
+        
+        if index == max_index:
+            key = f"{min_date} to now"
+
+        weekly_averages[key] = [avg_weight, index]
+    
+    return weekly_averages
 
 def generate_dates():
     today = datetime.today()
     dates = [(today - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(7)]
     return dates
+
+def login_required(f):
+    @wraps(f)
+    def wrap(*args, **kwargs):
+        if 'logged_in' in session:
+            return f(*args, **kwargs)
+        else:
+            return redirect('/')
+    
+    return wrap
 
 all_weights_json: str = "./db/all_weights_db.json"
 weekly_averages_csv: str = "./db/weekly_averages_db.csv"
@@ -143,17 +220,7 @@ weekly_averages_json_backup: str = "../weight_tracker_db_backup/weekly_averages_
 uri = string_1.ret_uri()
 client = MongoClient(uri)
 db = client["test"]
-collection = db["users"]
-user_name = "RadShiadeh"
-
-user_data = collection.find_one({"username": user_name})
-
-if user_data:
-    all_weights = {w["date"]: [w["weight"][0], w["weight"][1]] for w in user_data["all_weights"]}
-    all_weekly_averages = {w["date"]: [w["average"], w["index"]] for w in user_data["weekly_avgs"]}
-    last_seven = user_data["last_seven"]
-else:
-    print(f"user {user_name} not found")
+from users import routes
 
 
 # all_weights = read_json(all_weights_json)
@@ -164,19 +231,49 @@ else:
 def login_page():
     return render_template('login.html')
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/')
+def signup_page():
+    return render_template('signup.html')
+
+@app.route('/home/', methods=['GET', 'POST'])
+@login_required
 def index():
     dates = generate_dates()
     global all_weights, last_seven, all_weekly_averages
+
+    user_name = session["user"]["username"]
+    collection = db["users"]
+    user_data = collection.find_one({"username": user_name})
+
+    if user_data:
+        all_weights = {w["date"]: [w["weight"][0], w["weight"][1]] for w in user_data["all_weights"]}
+        all_weekly_averages = {w["date"]: [w["average"], w["index"]] for w in user_data["weekly_avgs"]}
+        last_seven = user_data["last_seven"]
+    else:
+        print(f"user {user_name} not found")
+
+        
     duplicate = request.args.get('duplicate', 'false')
-    auto_fill_missing_dates(all_weights, all_weekly_averages, last_seven)
+    if all_weights and all_weekly_averages:
+        auto_fill_missing_dates(all_weights, all_weekly_averages, last_seven)
 
     selected_data = 'weekly_averages'
     if request.method == 'POST':
         if 'new_weight' in request.form:
             selected_date = request.form['date']
+            all_weight_dates = [datetime.strptime(date, "%Y-%m-%d") for date in all_weights.keys()]
+            earliest_entry = min(all_weight_dates)
+            selected_date_obj = datetime.strptime(selected_date, "%Y-%m-%d")
+            
             new_weight = float(request.form['new_weight'])
-            all_weights, last_seven, all_weekly_averages, is_duplicate = update_everything(last_seven, new_weight, all_weekly_averages, all_weights, selected_date)
+            is_duplicate = False
+
+            if earliest_entry > selected_date_obj:
+                auto_fill_prior_dates(all_weights, selected_date, new_weight)
+                all_weights = reorder_indexs(all_weights)
+                all_weekly_averages = update_weekly_averages(all_weights)
+            else:
+                all_weights, last_seven, all_weekly_averages, is_duplicate = update_everything(last_seven, new_weight, all_weekly_averages, all_weights, selected_date)
 
             if is_duplicate:
                 return redirect(url_for('index', duplicate='true'))
@@ -197,16 +294,19 @@ def index():
             )
         elif 'data-select' in request.form:
             selected_data = request.form.get('data-select', 'weekly_averages')
-
-    if selected_data == 'last_seven':
-        dict_data = {date: [value, index] for index, (date, value) in enumerate(last_seven[0]['data'].items(), 1)}
-        chart_title = "Last Seven Entries"
-    elif selected_data == 'all_weights':
-        dict_data = all_weights
-        chart_title = "All Weight Entries"
-    else:
-        dict_data = all_weekly_averages
-        chart_title = "Weekly Averages"
+    
+    dict_data = {}
+    chart_title = ""
+    if all_weights and all_weekly_averages:
+        if selected_data == 'last_seven' and last_seven:
+            dict_data = {date: [value, index] for index, (date, value) in enumerate(last_seven[0]['data'].items(), 1)}
+            chart_title = "Last Seven Entries"
+        elif selected_data == 'all_weights':
+            dict_data = all_weights
+            chart_title = "All Weight Entries"
+        else:
+            dict_data = all_weekly_averages
+            chart_title = "Weekly Averages"
 
     return render_template('index.html', dates=dates, dict_data=dict_data, duplicate=duplicate, chart_title=chart_title, selected_data=selected_data)
 

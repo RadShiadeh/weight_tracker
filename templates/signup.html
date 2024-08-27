@@ -9,20 +9,26 @@
     <body>
         <div class="card-wrapper">
             <div class="card">
-                <h1 class="center">login</h1>
-                <form name="login_form">
+                <h1 class="center">create an account</h1>
+                <form name="signup_form">
                     <label for="username"> username </label>
                     <input type="text" name="username" class="field" required></input>
 
+                    <label for="email"> email </label>
+                    <input type="text" name="email" class="field" required></input>
+
                     <label for="password"> password </label>
                     <input type="password" name="password" class="field" required></input>
+
+                    <label for="confirm"> confirm password </label>
+                    <input type="password" name="confirm" class="field" required></input>
                     
                     <p class="error error--hidden"></p>
 
-                    <input type="submit" value="login" class="btn"></input>
+                    <input type="submit" value="sign up" class="btn"></input>
                 </form>
                 <div>
-                    <p>Dont have an account? <a href="/">signup</a></p>
+                    <p>Already have an account? <a href="/login">login</a></p>
                 </div>
             </div>
         </div>
