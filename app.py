@@ -10,7 +10,8 @@ import string_1
 from datetime import datetime, timedelta
 
 app = Flask(__name__)
-app.secret_key = b'\xd0ud\x86*\xe0\xf3\x87\x9a\x1a[Vu\xec\xc2]'
+key = string_1.get_secret_key()
+app.secret_key = key
 
 def write_json(file_path: str, data):
     with open(file_path, "w") as f:
