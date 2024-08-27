@@ -104,3 +104,25 @@ form button:hover {
 .btn:hover {
     background-color: #0056b3;
 }
+
+.table-data {
+    margin-left: auto;
+    margin-right: auto;
+    border-collapse: separate;
+    border-spacing: 15px 10px; /* Adds space between cells */
+    text-align: center;
+}
+
+.table-data th, .table-data td {
+    padding: 10px 20px; /* Adds padding inside the cells */
+    text-align: center; /* Centers the text inside cells */
+    border: 1px solid #ddd; /* Optional: Adds a border to the cells */
+}
+
+.table-data th {
+    background-color: #f2f2f2; /* Optional: Background color for the header */
+}
+
+h2 {
+    text-align: center; /* Center the heading above the table */
+}
