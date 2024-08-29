@@ -54,7 +54,7 @@
                         <select name="plot-from" id="plot-from">
                             {% if selected_data == 'weekly_averages' %}
                                 {% for key, items in dict_data.items() %}
-                                    <option value="{{ items[1] }}" {% if key == start_index %}selected{% endif %}>{{ items[1] }}</option>
+                                    <option value="{{ items[1] }}" {% if key == start_key %}selected{% endif %}>{{ items[1] }}</option>
                                 {% endfor %}
                             {% elif selected_data == 'all_weights' %}
                                 {% for key, _ in dict_data.items() %}
