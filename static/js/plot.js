@@ -1,19 +1,26 @@
-function plot(dictData, chartTitle, start, end) {
+function plot(dictData, chartTitle, start, end, dt) {
     const ctx = document.getElementById('myChart').getContext('2d');
     let dataValues = [];
     let labels = [];
     let startAdding = false;
 
-    for (const [key, value] of Object.entries(dictData)) {
-        if (key === start) {
-            startAdding = true;
+    if (dt !== "last_seven") {
+        for (const [key, value] of Object.entries(dictData)) {
+            if (key === start) {
+                startAdding = true;
+            }
+            if (startAdding) {
+                dataValues.push(value[0]);
+                labels.push(key);
+            }
+            if (key === end) {
+                break;
+            }
         }
-        if (startAdding) {
+    } else {
+        for (const [key, value] of Object.entries(dictData)) {
             dataValues.push(value[0]);
             labels.push(key);
-        }
-        if (key === end) {
-            break;
         }
     }
 

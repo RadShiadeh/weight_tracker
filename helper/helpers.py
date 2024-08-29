@@ -55,7 +55,7 @@ def update_everything(weekly_weights, new_weight: int, weekly_average, all_weigh
             weekly_weights = [{'data': {}, 'index': weekly_weights[0]['index'] + 1}]
             weekly_weights[0]['data'][selected_date] = new_weight
 
-            weekly_average[f"{selected_date} to now"] = [new_weight, end_week_index+1]
+            weekly_average[f"{selected_date} to now"] = [new_weight, int(end_week_index)+1]
             all_weights_c[selected_date][1] = end_week_index+1
         else:
             weekly_weights[0]['data'][selected_date] = new_weight
@@ -63,7 +63,7 @@ def update_everything(weekly_weights, new_weight: int, weekly_average, all_weigh
             for k in weekly_weights[0]['data'].values():
                 average += k
             average = average / len(weekly_weights[0]['data'].keys())
-            weekly_average[end_key] = [average, end_week_index]
+            weekly_average[end_key] = [average, int(end_week_index)]
             all_weights_c[selected_date][1] = end_week_index
     else:
         index = val[1]
@@ -245,10 +245,8 @@ def delete_date(all_weights, all_weekly_averages, last_seven, date):
 
 def fill_gaps(all_weights, last_seven, all_weekly_averages, latest, new_entry, new_date):
     while latest <= new_date:
-        print(latest)
         latest += timedelta(days=1)
         date_str = latest.strftime("%Y-%m-%d")
         all_weights, last_seven, all_weekly_averages, _ = update_everything(last_seven, new_entry, all_weekly_averages, all_weights, date_str)
-        print(all_weights)
     
     return all_weights, last_seven, all_weekly_averages, True
