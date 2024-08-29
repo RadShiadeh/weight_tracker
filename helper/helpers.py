@@ -245,8 +245,10 @@ def delete_date(all_weights, all_weekly_averages, last_seven, date):
 
 def fill_gaps(all_weights, last_seven, all_weekly_averages, latest, new_entry, new_date):
     while latest <= new_date:
+        print(latest)
         latest += timedelta(days=1)
         date_str = latest.strftime("%Y-%m-%d")
         all_weights, last_seven, all_weekly_averages, _ = update_everything(last_seven, new_entry, all_weekly_averages, all_weights, date_str)
+        print(all_weights)
     
     return all_weights, last_seven, all_weekly_averages, True

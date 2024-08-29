@@ -51,7 +51,7 @@
                     <label for="data-select">Select dates:</label>
                     <div id="plot-options">
                         <label for="plot-from" >from</label>
-                        <select name="plot-from" id="plot-from" onchange="this.form.submit()">
+                        <select name="plot-from" id="plot-from">
                             {% if selected_data == 'weekly_averages' %}
                                 {% for key, items in dict_data.items() %}
                                     <option value="{{ items[1] }}" {% if key == start_key %}selected{% endif %}>{{ items[1] }}</option>
@@ -64,7 +64,7 @@
                         </select>
         
                         <label for="plot-to">to</label>
-                        <select name="plot-to" id="plot-to" onchange="this.form.submit()">
+                        <select name="plot-to" id="plot-to">
                             {% if selected_data == 'weekly_averages' %}
                                 {% for key, items in dict_data.items() %}
                                     <option value="{{ items[1] }}" {% if key == end_key %}selected{% endif %}>{{ items[1] }}</option>
@@ -75,6 +75,7 @@
                                 {% endfor %}
                             {% endif %}
                         </select>
+                        <button type="submit_new">Submit</button>
                     </div>
                     <div class="tooltip">?
                         <span class="tooltiptext">determine the timeline</span>
