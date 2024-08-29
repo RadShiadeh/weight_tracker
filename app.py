@@ -74,6 +74,7 @@ def index():
             selected_date = request.form['date']
             all_weight_dates = [datetime.strptime(date, "%Y-%m-%d") for date in all_weights.keys()]
             earliest_entry = min(all_weight_dates)
+            latest_entry = max(all_weight_dates)
             selected_date_obj = datetime.strptime(selected_date, "%Y-%m-%d")
             
             new_weight = float(request.form['new_weight'])
@@ -84,6 +85,10 @@ def index():
                 all_weights = helpers.reorder_indexs(all_weights)
                 all_weekly_averages = helpers.update_weekly_averages(all_weights)
                 last_seven = helpers.update_last_seven(last_seven, all_weights)
+
+            elif latest_entry < selected_date_obj:
+                all_weights, last_seven, all_weekly_averages = helpers.fill_gaps(all_weights, last_seven, all_weekly_averages, latest_entry, new_weight, selected_date_obj)
+                
             else:
                 all_weights, last_seven, all_weekly_averages, is_duplicate = helpers.update_everything(last_seven, new_weight, all_weekly_averages, all_weights, selected_date)
 

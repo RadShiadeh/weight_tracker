@@ -1,6 +1,5 @@
 from collections import defaultdict
 from datetime import datetime, timedelta
-from datetime import datetime, timedelta
 
 
 def update_everything(weekly_weights, new_weight: int, weekly_average, all_weights_c, selected_date):
@@ -243,3 +242,11 @@ def delete_date(all_weights, all_weekly_averages, last_seven, date):
     last_seven = update_last_seven(last_seven, all_weights)
 
     return all_weights, all_weekly_averages, last_seven, alert
+
+def fill_gaps(all_weights, last_seven, all_weekly_averages, latest, new_entry, new_date):
+    while latest <= new_date:
+        latest += timedelta(days=1)
+        date_str = latest.strftime("%Y-%m-%d")
+        all_weights, last_seven, all_weekly_averages, _ = update_everything(last_seven, new_entry, all_weekly_averages, all_weights, date_str)
+    
+    return all_weights, last_seven, all_weekly_averages
