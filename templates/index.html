@@ -18,7 +18,15 @@
             <input type="date" id="date" name="date" required>
             <label for="new_weight">Enter weight:</label>
             <input type="number" id="new_weight" name="new_weight" step="0.1" required>
-            <button type="submit">Submit</button>
+            <button type="submit_new">Submit</button>
+        </form>
+        <form method="post" action="/home/">
+            <label for="date_del">Select Date:</label>
+            <input type="date" id="date_del" name="date_del" required>
+            <button type="submit_del">Delete</button>
+            <div class="tooltip">?
+                <span class="tooltiptext">delete an entry, only works if the date is later than today</span>
+            </div>
         </form>
         <form method="post" action="/home/">
             <div class="container">
@@ -48,8 +56,10 @@
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script src="{{ url_for('static', filename='js/dup_check.js') }}"></script>
         <script src="{{ url_for('static', filename='js/plot.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/alert_check.js') }}"></script>
         <script>
             dup_check("{{ duplicate }}");
+            alert_check("{{ alert }}")
             const dictData = JSON.parse('{{ dict_data | tojson | safe }}');
             const chartTitle = "{{ chart_title }}";
             plot(dictData, chartTitle);

@@ -58,6 +58,18 @@ def index():
 
     selected_data = 'weekly_averages'
     if request.method == 'POST':
+        alert = False
+        if 'date_del' in request.form:
+            date_to_delete = request.form['date_del']
+            all_weights, all_weekly_averages, last_seven, alert = helpers.delete_date(all_weights, all_weekly_averages, last_seven, date_to_delete)
+            helpers.update_db(all_weights, all_weekly_averages, last_seven, collection, user_name)
+
+            if alert:
+                return redirect(url_for('index', alert='true'))
+            else:
+                return redirect(url_for('index'))
+
+
         if 'new_weight' in request.form:
             selected_date = request.form['date']
             all_weight_dates = [datetime.strptime(date, "%Y-%m-%d") for date in all_weights.keys()]
@@ -71,12 +83,14 @@ def index():
                 helpers.auto_fill_prior_dates(all_weights, selected_date, new_weight)
                 all_weights = helpers.reorder_indexs(all_weights)
                 all_weekly_averages = helpers.update_weekly_averages(all_weights)
+                last_seven = helpers.update_last_seven(last_seven, all_weights)
             else:
                 all_weights, last_seven, all_weekly_averages, is_duplicate = helpers.update_everything(last_seven, new_weight, all_weekly_averages, all_weights, selected_date)
 
             if is_duplicate:
                 helpers.update_db(all_weights, all_weekly_averages, last_seven, collection, user_name)
                 return redirect(url_for('index', duplicate='true'))
+                
             
             helpers.update_db(all_weights, all_weekly_averages, last_seven, collection, user_name)
 

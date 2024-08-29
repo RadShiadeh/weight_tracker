@@ -141,6 +141,22 @@ def reorder_indexs(all_weights):
 
     return temp
 
+def update_last_seven(last_seven, all_weights):
+    latest_key = list(sorted(all_weights.keys()))[-1]
+    last_index = all_weights[latest_key][1]
+    data = []
+
+    for d, e in all_weights.items():
+        if e[1] == last_index:
+            data.append([d, e[0]])
+
+    last_seven[0]['index'] = last_index
+    for d in data:
+        last_seven[0]['data'][d[0]] = d[1]
+    
+    return last_seven
+
+
 def update_weekly_averages(all_weights):
     grouped_weights = defaultdict(list)
     max_index = 0
@@ -183,3 +199,47 @@ def update_db(all_weights, all_weekly_averages, last_seven, collection, user_nam
             }
         }
     )
+
+def delete_date(all_weights, all_weekly_averages, last_seven, date):
+    alert = False
+    today = datetime.today()
+    date_obj = datetime.strptime(date, "%Y-%m-%d")
+    if today > date_obj:
+        alert = True
+        return all_weights, all_weekly_averages, last_seven, alert
+
+    if date not in all_weights.keys():
+        alert = True
+        return all_weights, all_weekly_averages, last_seven, alert
+
+    val = all_weights[date][1]
+
+    length_of_last_seven = len(last_seven[0]['data'])
+
+    last_avg_entry_key = list(all_weekly_averages.keys())[-1]
+    last_avg_value = all_weekly_averages[last_avg_entry_key][1]
+
+    del all_weights[date]
+
+    if length_of_last_seven - 1 > 0:
+        new_val = ((length_of_last_seven * last_avg_value) - val) / (length_of_last_seven - 1)
+        all_weekly_averages[last_avg_entry_key][1] = new_val
+        del last_seven[0]["data"][date]
+    else:
+        last_seven[0]["data"] = {}
+        del all_weekly_averages[last_avg_entry_key]
+        last_avg_entry_key = list(all_weekly_averages.keys())[-1]
+
+        new_key = ""
+        for s in last_avg_entry_key:
+            if s == "o":
+                break
+            new_key += s
+
+        new_key += "o now"
+        all_weekly_averages[new_key] = all_weekly_averages[last_avg_entry_key]
+        del all_weekly_averages[last_avg_entry_key]
+    
+    last_seven = update_last_seven(last_seven, all_weights)
+
+    return all_weights, all_weekly_averages, last_seven, alert
