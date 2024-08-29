@@ -48,11 +48,31 @@
             <canvas id="myChart"></canvas>
         </div>
 
-        <p>
-            {% for key, value in dict_data.items() %}
-                {{ key }} = {{ value[1], value[0] }}<br>
-            {% endfor %}
-        </p>
+        <div>
+            <h2>Entries</h2>
+            <table class="table-data">
+                <div class="tooltip">?
+                    <span class="tooltiptext">index is used as a reference for enteies</span>
+                </div>
+                <thead>
+                    <tr>
+                        <th>index</th>
+                        <th>date</th>
+                        <th>weight entry</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for key, value in dict_data.items() %}
+                        <tr>
+                            <td>{{ value[1] }}</td>
+                            <td>{{ key }}</td>
+                            <td>{{ value[0] }} kg</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>        
+
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script src="{{ url_for('static', filename='js/dup_check.js') }}"></script>
         <script src="{{ url_for('static', filename='js/plot.js') }}"></script>
