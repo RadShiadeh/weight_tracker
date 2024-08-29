@@ -1,221 +1,14 @@
-from collections import defaultdict
-from datetime import datetime, timedelta
-import json
+from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, session
 from functools import wraps
-import os
-import shutil
 from pymongo import MongoClient
 import string_1
-from datetime import datetime, timedelta
+from datetime import datetime
+from helper import helpers
 
 app = Flask(__name__)
 key = string_1.get_secret_key()
 app.secret_key = key
-
-def write_json(file_path: str, data):
-    with open(file_path, "w") as f:
-        json.dump(data, f, indent=4)
-
-def read_json(file_path: str):
-    if os.path.exists(file_path):
-        with open(file_path, "r") as f:
-            return json.load(f)
-    return {}
-
-def backup(source, target):
-    shutil.copyfile(source, target)
-
-
-def update_everything(weekly_weights, new_weight: int, weekly_average, all_weights_c, selected_date):
-    if not weekly_average:
-        k = str(selected_date) + " to " + "now"
-        weekly_average[k] = [new_weight, 1]
-        all_weights_c[selected_date] = [new_weight, 1]
-        weekly_weights = [{'data': {selected_date: new_weight}, 'index': 1}]
-        return all_weights_c, weekly_weights, weekly_average, False
-
-    duplicate = False
-    val = [new_weight, 0]
-    old_weight_entry = new_weight
-
-    if selected_date in all_weights_c.keys():
-        i = all_weights_c[selected_date][1]
-        old_weight_entry = all_weights_c[selected_date][0]
-        val = [new_weight, i]
-        duplicate = True
-    
-    all_weights_c[selected_date] = val
-
-    if not duplicate:
-        weekly_avg_keys: list[str] = []
-        for k in weekly_average.keys():
-            weekly_avg_keys.append(k)
-    
-        end_key = weekly_avg_keys[-1]
-        end_week_index = weekly_average[end_key][1]
-
-        if len(weekly_weights[0]['data']) == 7:
-            average: float = 0
-            for k in weekly_weights[0]['data'].values():
-                average += k
-            average = average / 7
-
-            start_d: str = ""
-            all_weights_ks: list[str] = []
-            for k in all_weights_c.keys():
-                all_weights_ks.append(k)
-            
-            end_d: str = all_weights_ks[len(all_weights_ks) - 2]
-
-            for c in end_key:
-                if c == " ":
-                    break
-                start_d += c
-
-            del weekly_average[end_key]
-            end_key = f"{start_d} to {end_d}"
-            weekly_average[end_key] = [average, end_week_index]
-
-            weekly_weights = [{'data': {}, 'index': weekly_weights[0]['index'] + 1}]
-            weekly_weights[0]['data'][selected_date] = new_weight
-
-            weekly_average[f"{selected_date} to now"] = [new_weight, end_week_index+1]
-            all_weights_c[selected_date][1] = end_week_index+1
-        else:
-            weekly_weights[0]['data'][selected_date] = new_weight
-            average: float = 0
-            for k in weekly_weights[0]['data'].values():
-                average += k
-            average = average / len(weekly_weights[0]['data'].keys())
-            weekly_average[end_key] = [average, end_week_index]
-            all_weights_c[selected_date][1] = end_week_index
-    else:
-        index = val[1]
-        key = ""
-        for k, v in weekly_average.items():
-            if v[1] == index:
-                key = k
-                break
-        
-        pre_average = weekly_average[key][0]
-        post_average = 0
-        if selected_date in weekly_weights[0]['data'].keys():
-            weekly_weights[0]['data'][selected_date] = new_weight
-            len_last_seven = len(weekly_weights[0]['data'])
-            post_average = ( ( (pre_average * len_last_seven) - old_weight_entry) + new_weight ) / len_last_seven
-        else:
-            post_average = ( ( (pre_average * 7) - old_weight_entry) + new_weight ) / 7
-        
-        weekly_average[key][0] = post_average
-    
-
-    write_json(all_weights_json, all_weights_c)
-    write_json(last_seven_json, weekly_weights)
-    write_json(weekly_averages_json, weekly_average)
-
-    backup(all_weights_json, all_weights_backup)
-    backup(last_seven_json, last_seven_backup)
-    backup(weekly_averages_json, weekly_averages_json_backup)
-    
-    return all_weights_c, weekly_weights, weekly_average, duplicate
-
-
-def auto_fill_missing_dates(all_weights, weekly_averages, last_seven):
-    all_weight_dates = [datetime.strptime(date, "%Y-%m-%d") for date in all_weights.keys()]
-    last_weight_date = max(all_weight_dates)
-
-    last_avg_entry = max(weekly_averages.items(), key=lambda x: x[1][1])
-    last_avg_value = last_avg_entry[1][0]
-
-    yesterday = datetime.today() - timedelta(days=1)
-    current_date = last_weight_date + timedelta(days=1)
-
-    while current_date <= yesterday:
-        formatted_date = current_date.strftime("%Y-%m-%d")
-        all_weights, last_seven, weekly_averages, _ = update_everything(last_seven, last_avg_value, weekly_averages, all_weights, formatted_date)
-        current_date += timedelta(days=1)
-    
-    return all_weights, weekly_averages, last_seven
-
-    
-def auto_fill_prior_dates(all_weights, entery_date, val):
-    all_weight_dates = [datetime.strptime(date, "%Y-%m-%d") for date in all_weights.keys()]
-    first_weight_date = min(all_weight_dates)
-
-    entery_date_obj = datetime.strptime(entery_date, "%Y-%m-%d")
-    index = 1
-    c = 1
-
-    while entery_date_obj < first_weight_date:
-        formatted_date = entery_date_obj.strftime("%Y-%m-%d")
-        all_weights[formatted_date] = [val, index]
-        c+=1
-        if c == 7:
-            index += 1
-            c = 1
-        entery_date_obj += timedelta(days=1)
-
-def reorder_indexs(all_weights):
-    all_weight_dates = sorted([datetime.strptime(date, "%Y-%m-%d") for date in all_weights.keys()])
-    temp = {}
-    index = 1
-    c = 0
-    for d in all_weight_dates:
-        str_date = d.strftime('%Y-%m-%d')
-        weight = all_weights[str_date][0]
-        
-        if c == 7:
-            c = 0
-            index += 1
-        
-        c += 1
-        temp[str_date] = [weight, index]
-
-    return temp
-
-def update_weekly_averages(all_weights):
-    grouped_weights = defaultdict(list)
-    max_index = 0
-    for date, (weight, index) in all_weights.items():
-        max_index = max(max_index, index)
-        grouped_weights[index].append((date, weight))
-    
-    weekly_averages = {}
-    for index, values in grouped_weights.items():
-        dates = [datetime.strptime(date, "%Y-%m-%d") for date, _ in values]
-        min_date = min(dates).strftime('%Y-%m-%d')
-        max_date = max(dates).strftime('%Y-%m-%d')
-        avg_weight = sum(weight for _, weight in values) / len(values)
-        key = f"{min_date} to {max_date}"
-        
-        if index == max_index:
-            key = f"{min_date} to now"
-
-        weekly_averages[key] = [avg_weight, index]
-    
-    return weekly_averages
-
-def generate_dates():
-    today = datetime.today()
-    dates = [(today - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(7)]
-    return dates
-
-def update_db(all_weights, all_weekly_averages, last_seven, collection, user_name):
-    all_weights_list = [{'date': d, 'weight': w} for d, w in all_weights.items()]
-    weekly_avgs_list = [{'date': d, 'average': v[0], 'index': v[1]} for d, v in all_weekly_averages.items()]
-    last_seven_list = [{'data': ls['data'], 'index': ls['index']} for ls in last_seven]
-
-    collection.update_one(
-        {"username": user_name},
-        {
-            "$set": {
-                "all_weights": all_weights_list,
-                "weekly_avgs": weekly_avgs_list,
-                "last_seven": last_seven_list
-            }
-        }
-    )
 
 def login_required(f):
     @wraps(f)
@@ -227,24 +20,11 @@ def login_required(f):
     
     return wrap
 
-all_weights_json: str = "./db/all_weights_db.json"
-weekly_averages_csv: str = "./db/weekly_averages_db.csv"
-last_seven_json: str = "./db/last_seven_db.json"
-weekly_averages_json = "./db/weekly_averages_db.json"
-
-all_weights_backup: str = "../weight_tracker_db_backup/all_weights_db.json"
-last_seven_backup: str = "../weight_tracker_db_backup/last_seven_db.json"
-weekly_averages_json_backup: str = "../weight_tracker_db_backup/weekly_averages_db.json"
-
 uri = string_1.ret_uri()
 client = MongoClient(uri)
 db = client["test"]
+
 from users import routes
-
-
-# all_weights = read_json(all_weights_json)
-# all_weekly_averages = read_json(weekly_averages_json)
-# last_seven = read_json(last_seven_json) for local debugging
 
 @app.route('/login/')
 def login_page():
@@ -257,7 +37,7 @@ def signup_page():
 @app.route('/home/', methods=['GET', 'POST'])
 @login_required
 def index():
-    dates = generate_dates()
+    dates = helpers.generate_dates()
     global all_weights, last_seven, all_weekly_averages
 
     user_name = session["user"]["username"]
@@ -274,7 +54,7 @@ def index():
         
     duplicate = request.args.get('duplicate', 'false')
     if all_weights and all_weekly_averages:
-        all_weights, all_weekly_averages, last_seven = auto_fill_missing_dates(all_weights, all_weekly_averages, last_seven)
+        all_weights, all_weekly_averages, last_seven = helpers.auto_fill_missing_dates(all_weights, all_weekly_averages, last_seven)
 
     selected_data = 'weekly_averages'
     if request.method == 'POST':
@@ -288,17 +68,17 @@ def index():
             is_duplicate = False
 
             if earliest_entry > selected_date_obj:
-                auto_fill_prior_dates(all_weights, selected_date, new_weight)
-                all_weights = reorder_indexs(all_weights)
-                all_weekly_averages = update_weekly_averages(all_weights)
+                helpers.auto_fill_prior_dates(all_weights, selected_date, new_weight)
+                all_weights = helpers.reorder_indexs(all_weights)
+                all_weekly_averages = helpers.update_weekly_averages(all_weights)
             else:
-                all_weights, last_seven, all_weekly_averages, is_duplicate = update_everything(last_seven, new_weight, all_weekly_averages, all_weights, selected_date)
+                all_weights, last_seven, all_weekly_averages, is_duplicate = helpers.update_everything(last_seven, new_weight, all_weekly_averages, all_weights, selected_date)
 
             if is_duplicate:
-                update_db(all_weights, all_weekly_averages, last_seven, collection, user_name)
+                helpers.update_db(all_weights, all_weekly_averages, last_seven, collection, user_name)
                 return redirect(url_for('index', duplicate='true'))
             
-            update_db(all_weights, all_weekly_averages, last_seven, collection, user_name)
+            helpers.update_db(all_weights, all_weekly_averages, last_seven, collection, user_name)
 
         elif 'data-select' in request.form:
             selected_data = request.form.get('data-select', 'weekly_averages')
