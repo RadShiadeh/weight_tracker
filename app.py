@@ -53,19 +53,22 @@ def index():
 
         
     duplicate = request.args.get('duplicate', 'false')
+    gap = request.args.get('gap', 'false')
+    alert_ = request.args.get('alert_', 'false')
+
     if all_weights and all_weekly_averages:
         all_weights, all_weekly_averages, last_seven = helpers.auto_fill_missing_dates(all_weights, all_weekly_averages, last_seven)
 
     selected_data = 'weekly_averages'
     if request.method == 'POST':
-        alert = False
+        alert_ = False
         if 'date_del' in request.form:
             date_to_delete = request.form['date_del']
-            all_weights, all_weekly_averages, last_seven, alert = helpers.delete_date(all_weights, all_weekly_averages, last_seven, date_to_delete)
+            all_weights, all_weekly_averages, last_seven, alert_ = helpers.delete_date(all_weights, all_weekly_averages, last_seven, date_to_delete)
             helpers.update_db(all_weights, all_weekly_averages, last_seven, collection, user_name)
 
-            if alert:
-                return redirect(url_for('index', alert='true'))
+            if alert_:
+                return redirect(url_for('index', alert_='true'))
             else:
                 return redirect(url_for('index'))
 
@@ -79,6 +82,7 @@ def index():
             
             new_weight = float(request.form['new_weight'])
             is_duplicate = False
+            gap = False
 
             if earliest_entry > selected_date_obj:
                 helpers.auto_fill_prior_dates(all_weights, selected_date, new_weight)
@@ -87,17 +91,22 @@ def index():
                 last_seven = helpers.update_last_seven(last_seven, all_weights)
 
             elif latest_entry < selected_date_obj:
-                all_weights, last_seven, all_weekly_averages = helpers.fill_gaps(all_weights, last_seven, all_weekly_averages, latest_entry, new_weight, selected_date_obj)
-                
+                all_weights, last_seven, all_weekly_averages, gap = helpers.fill_gaps(all_weights, last_seven, all_weekly_averages, latest_entry, new_weight, selected_date_obj)
+
             else:
                 all_weights, last_seven, all_weekly_averages, is_duplicate = helpers.update_everything(last_seven, new_weight, all_weekly_averages, all_weights, selected_date)
-
-            if is_duplicate:
-                helpers.update_db(all_weights, all_weekly_averages, last_seven, collection, user_name)
-                return redirect(url_for('index', duplicate='true'))
-                
             
             helpers.update_db(all_weights, all_weekly_averages, last_seven, collection, user_name)
+
+            if is_duplicate:
+                return redirect(url_for('index', duplicate='true'))
+            
+            if gap:
+                return redirect(url_for('index', gap='true'))
+            
+            if alert_:
+                return redirect(url_for('index', alert_='true'))
+                
 
         elif 'data-select' in request.form:
             selected_data = request.form.get('data-select', 'weekly_averages')
@@ -115,7 +124,7 @@ def index():
             dict_data = all_weekly_averages
             chart_title = "Weekly Averages"
 
-    return render_template('index.html', dates=dates, dict_data=dict_data, duplicate=duplicate, chart_title=chart_title, selected_data=selected_data)
+    return render_template('index.html', dates=dates, dict_data=dict_data, duplicate=duplicate, chart_title=chart_title, selected_data=selected_data, alert_=alert_, gap=gap)
 
 
 

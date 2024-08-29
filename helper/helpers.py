@@ -249,4 +249,4 @@ def fill_gaps(all_weights, last_seven, all_weekly_averages, latest, new_entry, n
         date_str = latest.strftime("%Y-%m-%d")
         all_weights, last_seven, all_weekly_averages, _ = update_everything(last_seven, new_entry, all_weekly_averages, all_weights, date_str)
     
-    return all_weights, last_seven, all_weekly_averages
+    return all_weights, last_seven, all_weekly_averages, True

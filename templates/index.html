@@ -21,11 +21,11 @@
             <button type="submit_new">Submit</button>
         </form>
         <form method="post" action="/home/">
-            <label for="date_del">Select Date:</label>
+            <label for="date_del">Select Date to delete:</label>
             <input type="date" id="date_del" name="date_del" required>
             <button type="submit_del">Delete</button>
             <div class="tooltip">?
-                <span class="tooltiptext">delete an entry, only works if the date is later than today</span>
+                <span class="tooltiptext">only works if the date is later than today</span>
             </div>
         </form>
         <form method="post" action="/home/">
@@ -38,7 +38,7 @@
                         <option value="all_weights" {% if selected_data == 'all_weights' %}selected{% endif %}>All Weights</option>
                     </select>
                     <div class="tooltip">?
-                        <span class="tooltiptext">This determines what data is plotted</span>
+                        <span class="tooltiptext">determine what is plotted</span>
                     </div>
                 </div>
             </div>
@@ -57,9 +57,11 @@
         <script src="{{ url_for('static', filename='js/dup_check.js') }}"></script>
         <script src="{{ url_for('static', filename='js/plot.js') }}"></script>
         <script src="{{ url_for('static', filename='js/alert_check.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/gap.js') }}"></script>
         <script>
             dup_check("{{ duplicate }}");
-            alert_check("{{ alert }}")
+            alert_check("{{ alert_ }}")
+            gap("{{ gap }}")
             const dictData = JSON.parse('{{ dict_data | tojson | safe }}');
             const chartTitle = "{{ chart_title }}";
             plot(dictData, chartTitle);
