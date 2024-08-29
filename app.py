@@ -133,8 +133,10 @@ def auto_fill_missing_dates(all_weights, weekly_averages, last_seven):
 
     while current_date <= yesterday:
         formatted_date = current_date.strftime("%Y-%m-%d")
-        update_everything(last_seven, last_avg_value, weekly_averages, all_weights, formatted_date)
+        all_weights, last_seven, weekly_averages, _ = update_everything(last_seven, last_avg_value, weekly_averages, all_weights, formatted_date)
         current_date += timedelta(days=1)
+    
+    return all_weights, weekly_averages, last_seven
 
     
 def auto_fill_prior_dates(all_weights, entery_date, val):
@@ -199,6 +201,22 @@ def generate_dates():
     dates = [(today - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(7)]
     return dates
 
+def update_db(all_weights, all_weekly_averages, last_seven, collection, user_name):
+    all_weights_list = [{'date': d, 'weight': w} for d, w in all_weights.items()]
+    weekly_avgs_list = [{'date': d, 'average': v[0], 'index': v[1]} for d, v in all_weekly_averages.items()]
+    last_seven_list = [{'data': ls['data'], 'index': ls['index']} for ls in last_seven]
+
+    collection.update_one(
+        {"username": user_name},
+        {
+            "$set": {
+                "all_weights": all_weights_list,
+                "weekly_avgs": weekly_avgs_list,
+                "last_seven": last_seven_list
+            }
+        }
+    )
+
 def login_required(f):
     @wraps(f)
     def wrap(*args, **kwargs):
@@ -256,7 +274,7 @@ def index():
         
     duplicate = request.args.get('duplicate', 'false')
     if all_weights and all_weekly_averages:
-        auto_fill_missing_dates(all_weights, all_weekly_averages, last_seven)
+        all_weights, all_weekly_averages, last_seven = auto_fill_missing_dates(all_weights, all_weekly_averages, last_seven)
 
     selected_data = 'weekly_averages'
     if request.method == 'POST':
@@ -277,22 +295,11 @@ def index():
                 all_weights, last_seven, all_weekly_averages, is_duplicate = update_everything(last_seven, new_weight, all_weekly_averages, all_weights, selected_date)
 
             if is_duplicate:
+                update_db(all_weights, all_weekly_averages, last_seven, collection, user_name)
                 return redirect(url_for('index', duplicate='true'))
             
-            all_weights_list = [{'date': d, 'weight': w} for d, w in all_weights.items()]
-            weekly_avgs_list = [{'date': d, 'average': v[0], 'index': v[1]} for d, v in all_weekly_averages.items()]
-            last_seven_list = [{'data': ls['data'], 'index': ls['index']} for ls in last_seven]
+            update_db(all_weights, all_weekly_averages, last_seven, collection, user_name)
 
-            collection.update_one(
-                {"username": user_name},
-                {
-                    "$set": {
-                        "all_weights": all_weights_list,
-                        "weekly_avgs": weekly_avgs_list,
-                        "last_seven": last_seven_list
-                    }
-                }
-            )
         elif 'data-select' in request.form:
             selected_data = request.form.get('data-select', 'weekly_averages')
     
