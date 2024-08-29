@@ -2,7 +2,7 @@
 <html lang="en">
     <head>
         <meta charset="utf-8">
-        <title>Weight Tracker</title>
+        <title>Tracker</title>
         <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     </head>
     <body>
@@ -11,12 +11,12 @@
             <a href="/users/signout" class="btn" onclick="signOutAlert(event)">Sign Out</a>
         </div>
         <h1>
-            Weekly Weight Tracker
+            Weekly Tracker
         </h1>
         <form method="post" action="/home/">
             <label for="date">Select Date:</label>
             <input type="date" id="date" name="date" required>
-            <label for="new_weight">Enter weight:</label>
+            <label for="new_weight">Enter data:</label>
             <input type="number" id="new_weight" name="new_weight" step="0.1" required>
             <button type="submit_new">Submit</button>
         </form>
@@ -28,22 +28,62 @@
                 <span class="tooltiptext">only works if the date is later than today</span>
             </div>
         </form>
+        <script src="{{ url_for('static', filename='js/togglePlotOptions.js') }}"></script>  
         <form method="post" action="/home/">
             <div class="container">
                 <div class="dropdown-container">
                     <label for="data-select">Select plot data:</label>
-                    <select name="data-select" id="data" onchange="this.form.submit()">
-                        <option value="weekly_averages" {% if selected_data == 'weekly_averages' %}selected{% endif %}>Weekly Averages</option>
+                    <select name="data-select" id="data" onchange="togglePlotOptions(); this.form.submit();">
+                        <option value="weekly_averages" {% if selected_data == 'weekly_averages' %}selected{% endif %}>Averages</option>
                         <option value="last_seven" {% if selected_data == 'last_seven' %}selected{% endif %}>Last Seven</option>
-                        <option value="all_weights" {% if selected_data == 'all_weights' %}selected{% endif %}>All Weights</option>
+                        <option value="all_weights" {% if selected_data == 'all_weights' %}selected{% endif %}>All</option>
                     </select>
                     <div class="tooltip">?
                         <span class="tooltiptext">determine what is plotted</span>
                     </div>
                 </div>
             </div>
-        </form>    
-
+        </form>
+        
+        <form method="post" action="/home/">
+            <div class="container">
+                <div class="dropdown-container">
+                    <label for="data-select">Select dates:</label>
+                    <div id="plot-options">
+                        <label for="plot-from" >from</label>
+                        <select name="plot-from" id="plot-from" onchange="this.form.submit()">
+                            {% if selected_data == 'weekly_averages' %}
+                                {% for key, items in dict_data.items() %}
+                                    <option value="{{ items[1] }}" {% if key == start_key %}selected{% endif %}>{{ items[1] }}</option>
+                                {% endfor %}
+                            {% elif selected_data == 'all_weights' %}
+                                {% for key, _ in dict_data.items() %}
+                                    <option value="{{ key }}" {% if key == start_key %}selected{% endif %}>{{ key }}</option>
+                                {% endfor %}
+                            {% endif %}
+                        </select>
+        
+                        <label for="plot-to">to</label>
+                        <select name="plot-to" id="plot-to" onchange="this.form.submit()">
+                            {% if selected_data == 'weekly_averages' %}
+                                {% for key, items in dict_data.items() %}
+                                    <option value="{{ items[1] }}" {% if key == end_key %}selected{% endif %}>{{ items[1] }}</option>
+                                {% endfor %}
+                            {% elif selected_data == 'all_weights' %}
+                                {% for key, _ in dict_data.items() %}
+                                    <option value="{{ key }}" {% if key == end_key %}selected{% endif %}>{{ key }}</option>
+                                {% endfor %}
+                            {% endif %}
+                        </select>
+                    </div>
+                    <div class="tooltip">?
+                        <span class="tooltiptext">determine the timeline</span>
+                    </div>
+                </div>
+            </div>
+        </form>
+        
+        
         <div>
             <canvas id="myChart"></canvas>
         </div>
@@ -58,7 +98,7 @@
                     <tr>
                         <th>index</th>
                         <th>date</th>
-                        <th>weight entry</th>
+                        <th>entry</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -84,7 +124,9 @@
             gap("{{ gap }}")
             const dictData = JSON.parse('{{ dict_data | tojson | safe }}');
             const chartTitle = "{{ chart_title }}";
-            plot(dictData, chartTitle);
+            const start_key = "{{ start_key }}"
+            const end_key = "{{ end_key }}"
+            plot(dictData, chartTitle, start_key, end_key);
         </script>
 
     </body>

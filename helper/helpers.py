@@ -115,7 +115,7 @@ def auto_fill_prior_dates(all_weights, entery_date, val):
 
     while entery_date_obj < first_weight_date:
         formatted_date = entery_date_obj.strftime("%Y-%m-%d")
-        all_weights[formatted_date] = [val, index]
+        all_weights[formatted_date] = [val, int(index)]
         c+=1
         if c == 7:
             index += 1
@@ -136,7 +136,7 @@ def reorder_indexs(all_weights):
             index += 1
         
         c += 1
-        temp[str_date] = [weight, index]
+        temp[str_date] = [weight, int(index)]
 
     return temp
 
@@ -149,7 +149,7 @@ def update_last_seven(last_seven, all_weights):
         if e[1] == last_index:
             data.append([d, e[0]])
 
-    last_seven[0]['index'] = last_index
+    last_seven[0]['index'] = int(last_index)
     for d in data:
         last_seven[0]['data'][d[0]] = d[1]
     
@@ -174,7 +174,7 @@ def update_weekly_averages(all_weights):
         if index == max_index:
             key = f"{min_date} to now"
 
-        weekly_averages[key] = [avg_weight, index]
+        weekly_averages[key] = [avg_weight, int(index)]
     
     return weekly_averages
 

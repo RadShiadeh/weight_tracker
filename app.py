@@ -49,12 +49,16 @@ def index():
         all_weekly_averages = {w["date"]: [w["average"], w["index"]] for w in user_data["weekly_avgs"]}
         last_seven = user_data["last_seven"]
     else:
-        print(f"user {user_name} not found")
+        return redirect(url_for('/'))
 
-        
     duplicate = request.args.get('duplicate', 'false')
     gap = request.args.get('gap', 'false')
     alert_ = request.args.get('alert_', 'false')
+    all_weight_dates = [datetime.strptime(date, "%Y-%m-%d") for date in all_weights.keys()]
+    earliest_entry = min(all_weight_dates)
+    latest_entry = max(all_weight_dates)
+    start_key = request.form.get('plot-from', earliest_entry.strftime('%Y-%m-%d'))
+    end_key = request.form.get('plot-to', latest_entry.strftime('%Y-%m-%d'))
 
     if all_weights and all_weekly_averages:
         all_weights, all_weekly_averages, last_seven = helpers.auto_fill_missing_dates(all_weights, all_weekly_averages, last_seven)
@@ -71,7 +75,6 @@ def index():
                 return redirect(url_for('index', alert_='true'))
             else:
                 return redirect(url_for('index'))
-
 
         if 'new_weight' in request.form:
             selected_date = request.form['date']
@@ -106,11 +109,13 @@ def index():
             
             if alert_:
                 return redirect(url_for('index', alert_='true'))
-                
 
         elif 'data-select' in request.form:
             selected_data = request.form.get('data-select', 'weekly_averages')
-    
+
+        start_key = request.form.get('plot-from', earliest_entry.strftime('%Y-%m-%d'))
+        end_key = request.form.get('plot-to', latest_entry.strftime('%Y-%m-%d'))
+
     dict_data = {}
     chart_title = ""
     if all_weights and all_weekly_averages:
@@ -118,13 +123,35 @@ def index():
             dict_data = {date: [value, index] for index, (date, value) in enumerate(last_seven[0]['data'].items(), 1)}
             chart_title = "Last Seven Entries"
         elif selected_data == 'all_weights':
+            start_key = request.form.get('plot-from', earliest_entry.strftime('%Y-%m-%d'))
+            end_key = request.form.get('plot-to', latest_entry.strftime('%Y-%m-%d'))
             dict_data = all_weights
-            chart_title = "All Weight Entries"
+            chart_title = "All Entries"
         else:
+            start_index = request.form.get('plot-from', earliest_entry.strftime('%Y-%m-%d'))
+            end_index = request.form.get('plot-to', latest_entry.strftime('%Y-%m-%d'))
+            for d, w in all_weekly_averages.items():
+                if str(w[1]) == start_index:
+                    start_key = d
+                elif str(w[1]) == end_index:
+                    end_key = d
+                    break
+                
             dict_data = all_weekly_averages
             chart_title = "Weekly Averages"
 
-    return render_template('index.html', dates=dates, dict_data=dict_data, duplicate=duplicate, chart_title=chart_title, selected_data=selected_data, alert_=alert_, gap=gap)
+    return render_template(
+        'index.html', 
+        dates=dates, 
+        dict_data=dict_data, 
+        duplicate=duplicate, 
+        chart_title=chart_title, 
+        selected_data=selected_data, 
+        alert_=alert_, 
+        gap=gap, 
+        start_key=start_key, 
+        end_key=end_key
+    )
 
 
 

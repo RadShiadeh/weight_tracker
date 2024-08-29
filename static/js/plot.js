@@ -1,12 +1,24 @@
-function plot(dictData, chartTitle) {
+function plot(dictData, chartTitle, start, end) {
     const ctx = document.getElementById('myChart').getContext('2d');
-
+    console.log(start, end)
     let dataValues = [];
     let labels = [];
+    let startAdding = false;
 
     for (const [key, value] of Object.entries(dictData)) {
-        dataValues.push(value[0]);
-        labels.push(value[1]);
+        // Start adding data only when start key is reached
+        if (key === start) {
+            startAdding = true;
+        }
+        // Add data only if startAdding is true
+        if (startAdding) {
+            dataValues.push(value[0]);
+            labels.push(key); // Use key as label to display dates
+        }
+        // Stop adding data once end key is reached
+        if (key === end) {
+            break;
+        }
     }
 
     new Chart(ctx, {
