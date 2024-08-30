@@ -69,16 +69,6 @@ def index():
         session["end_key"] = request.form.get('plot-to', latest_entry.strftime('%Y-%m-%d'))
         all_weights, all_weekly_averages, last_seven = helpers.auto_fill_missing_dates(all_weights, all_weekly_averages, last_seven)
 
-    if "selected_plot_data" not in session.keys():
-        session["selected_plot_data"] = 'all_weights'
-    
-    if "data" not in session.keys():
-            session["data"] = {}
-    
-    if "start_key" not in session.keys():
-        session["start_key"] = 1
-        session["end_key"] = 1
-
 
     if request.method == 'POST':
         alert_ = False
@@ -132,11 +122,6 @@ def index():
     else:
         session["start_key"] = 1
         session["end_key"] = 1
-        
-
-    
-    if "chart_title" not in session.keys():
-        session["chart_title"] = ""
 
     if all_weights and all_weekly_averages:
         if session["selected_plot_data"] == 'last_seven' and last_seven:

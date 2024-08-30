@@ -14,6 +14,13 @@ def signout():
 def login():
     return User().login()
 
+@app.route('/users/update/newEntry', methods=["POST"])
+def update_entry():
+    date = request.form.get('date')
+    entry = request.form.get('new_weight')
+
+    return User().update_entry(date, entry)
+
 
 @app.route('/users/data/<username>', methods=["GET"])
 def get_user_data(username):

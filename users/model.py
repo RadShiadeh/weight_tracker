@@ -4,6 +4,7 @@ from users_data import models
 import bcrypt
 from app import db
 import re
+from helper import helpers
 
 
 class User(me.Document):
@@ -23,6 +24,12 @@ class User(me.Document):
         del user["password"]
         session['logged_in'] = True
         session["user"] = user
+        session["start_key"] = request.form.get('plot-from', "")
+        session["end_key"] = request.form.get('plot-to', "")
+        session["selected_plot_data"] = 'all_weights'
+        session["data"] = {}
+        session["chart_title"] = ""
+
         return user, 200
 
     def has_sql_keywords(self, input_str):
@@ -106,3 +113,6 @@ class User(me.Document):
                 return jsonify({"error": "wrong password"}), 400
         else:
             return jsonify({"error": "Invalid username or password"}), 400
+    
+    def update_entry(self, date, entry):
+        helpers
