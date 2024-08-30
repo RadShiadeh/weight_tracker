@@ -114,5 +114,13 @@ class User(me.Document):
         else:
             return jsonify({"error": "Invalid username or password"}), 400
     
-    def update_entry(self, date, entry):
-        helpers
+    def update_entry(self, session, date, entry):
+        all_weights = session["user"]["all_weights"]
+        all_weekly_averages = session["user"]["weekly_avgs"]
+        last_seven = session["user"]["last_seven"]
+        collection = db["users"]
+        user_name = session["user"]["username"]
+
+
+        all_weights, last_seven, all_weekly_averages, _ = helpers.update_local_enteries(last_seven, entry, all_weekly_averages, all_weights, date)
+        helpers.update_db(all_weights, all_weekly_averages, last_seven, collection, user_name)

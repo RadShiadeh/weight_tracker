@@ -3,7 +3,7 @@ from flask import Flask, render_template, request, redirect, url_for, session
 from functools import wraps
 from pymongo import MongoClient
 import string_1
-from datetime import datetime
+from datetime import datetime, timedelta
 from helper import helpers
 
 app = Flask(__name__)
@@ -62,12 +62,12 @@ def index():
     session["end_key"] = request.form.get('plot-to', "")
 
     if all_weights and all_weekly_averages:
+        all_weights, all_weekly_averages, last_seven = helpers.auto_fill_missing_dates(all_weights, all_weekly_averages, last_seven)
         all_weight_dates = [datetime.strptime(date, "%Y-%m-%d") for date in all_weights.keys()]
         earliest_entry = min(all_weight_dates)
         latest_entry = max(all_weight_dates)
         session["start_key"] = request.form.get('plot-from', earliest_entry.strftime('%Y-%m-%d'))
         session["end_key"] = request.form.get('plot-to', latest_entry.strftime('%Y-%m-%d'))
-        all_weights, all_weekly_averages, last_seven = helpers.auto_fill_missing_dates(all_weights, all_weekly_averages, last_seven)
 
 
     if request.method == 'POST':
@@ -85,6 +85,7 @@ def index():
         if 'new_weight' in request.form:
             selected_date = request.form['date']
             selected_date_obj = datetime.strptime(selected_date, "%Y-%m-%d")
+            day_before = selected_date_obj - timedelta(days=1)
             
             new_weight = float(request.form['new_weight'])
             is_duplicate = False
@@ -96,13 +97,13 @@ def index():
                 all_weekly_averages = helpers.update_weekly_averages(all_weights)
                 last_seven = helpers.update_last_seven(last_seven, all_weights)
 
-            elif all_weight_dates and latest_entry < selected_date_obj:
-                all_weights, last_seven, all_weekly_averages, gap = helpers.fill_gaps(all_weights, last_seven, all_weekly_averages, latest_entry, new_weight, selected_date_obj)
+            elif all_weight_dates and latest_entry < day_before:
+                all_weights, last_seven, all_weekly_averages, gap = helpers.fill_gaps(all_weights, last_seven, all_weekly_averages, latest_entry, new_weight, day_before)
+                helpers.update_db(all_weights, all_weekly_averages, last_seven, collection, user_name)
 
             else:
-                all_weights, last_seven, all_weekly_averages, is_duplicate = helpers.update_everything(last_seven, new_weight, all_weekly_averages, all_weights, selected_date)
-            
-            helpers.update_db(all_weights, all_weekly_averages, last_seven, collection, user_name)
+                all_weights, last_seven, all_weekly_averages, is_duplicate = helpers.update_local_enteries(last_seven, new_weight, all_weekly_averages, all_weights, selected_date)
+                helpers.update_db(all_weights, all_weekly_averages, last_seven, collection, user_name)
 
             if is_duplicate:
                 return redirect(url_for('index', duplicate='true'))
