@@ -54,6 +54,7 @@ def index():
     duplicate = request.args.get('duplicate', 'false')
     gap = request.args.get('gap', 'false')
     alert_ = request.args.get('alert_', 'false')
+    auto_fill = request.args.get('auto_fill', 'false')
 
     all_weight_dates = []
     earliest_entry = ""
@@ -90,20 +91,21 @@ def index():
             new_weight = float(request.form['new_weight'])
             is_duplicate = False
             gap = False
+            auto_fill = False
 
             if all_weight_dates and earliest_entry > selected_date_obj:
-                helpers.auto_fill_prior_dates(all_weights, selected_date, new_weight)
+                auto_fill = helpers.auto_fill_prior_dates(all_weights, selected_date, new_weight)
                 all_weights = helpers.reorder_indexs(all_weights)
                 all_weekly_averages = helpers.update_weekly_averages(all_weights)
                 last_seven = helpers.update_last_seven(last_seven, all_weights)
 
             elif all_weight_dates and latest_entry < day_before:
                 all_weights, last_seven, all_weekly_averages, gap = helpers.fill_gaps(all_weights, last_seven, all_weekly_averages, latest_entry, new_weight, day_before)
-                helpers.update_db(all_weights, all_weekly_averages, last_seven, collection, user_name)
 
             else:
                 all_weights, last_seven, all_weekly_averages, is_duplicate = helpers.update_local_enteries(last_seven, new_weight, all_weekly_averages, all_weights, selected_date)
-                helpers.update_db(all_weights, all_weekly_averages, last_seven, collection, user_name)
+            
+            helpers.update_db(all_weights, all_weekly_averages, last_seven, collection, user_name)
 
             if is_duplicate:
                 return redirect(url_for('index', duplicate='true'))
@@ -113,6 +115,9 @@ def index():
             
             if alert_:
                 return redirect(url_for('index', alert_='true'))
+            
+            if auto_fill:
+                return redirect(url_for('index', auto_fill='true'))
 
         elif 'data-select' in request.form:
             session["selected_plot_data"] = request.form.get('data-select', 'weekly_averages')
@@ -156,7 +161,8 @@ def index():
         gap=gap, 
         start_key=session["start_key"], 
         end_key=session["end_key"],
-        sign_in="false"
+        sign_in="false",
+        auto_fill=auto_fill
     )
 
 

@@ -122,6 +122,8 @@ def auto_fill_prior_dates(all_weights, entery_date, val):
             index += 1
             c = 1
         entery_date_obj += timedelta(days=1)
+    
+    return True
 
 def reorder_indexs(all_weights):
     all_weight_dates = sorted([datetime.strptime(date, "%Y-%m-%d") for date in all_weights.keys()])

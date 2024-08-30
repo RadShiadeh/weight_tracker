@@ -123,11 +123,13 @@
         <script src="{{ url_for('static', filename='js/alert_check.js') }}"></script>
         <script src="{{ url_for('static', filename='js/gap.js') }}"></script>
         <script src="{{ url_for('static', filename='js/signInAgain.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/autoFillAlert.js') }}"></script>
         <script>
             dup_check("{{ duplicate }}");
             alert_check("{{ alert_ }}");
             gap("{{ gap }}");
             signInAgain("{{ sign_in }}");
+            autoFillAlert("{{ auto_fill }}")
             const dictData = JSON.parse('{{ dict_data | tojson | safe }}');
             const chartTitle = "{{ chart_title }}";
             const start_key = "{{ start_key }}";
