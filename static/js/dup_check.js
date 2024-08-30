@@ -3,8 +3,8 @@ function dup_check(duplicate) {
         const userConfirmation = confirm("An entery for the selected date exists, do you wish to update it?")
 
         if (userConfirmation) {
+            alert("entry will be updated!")
             document.getElementById('duplicate-update-form').submit();
-            alert("entry updated!")
         } else {
             alert("keeping the old entry")
         }
