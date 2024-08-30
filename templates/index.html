@@ -51,7 +51,7 @@
                     <label for="data-select">Select dates:</label>
                     <div id="plot-options">
                         <label for="plot-from" >from</label>
-                        <select name="plot-from" id="plot-from">
+                        <select name="plot-from" id="plot-from" onchange="this.form.submit()">
                             {% if selected_data == 'weekly_averages' %}
                                 {% for key, items in dict_data.items() %}
                                     <option value="{{ items[1] }}" {% if key == start_key %}selected{% endif %}>{{ items[1] }}</option>
@@ -118,15 +118,17 @@
         <script src="{{ url_for('static', filename='js/plot.js') }}"></script>
         <script src="{{ url_for('static', filename='js/alert_check.js') }}"></script>
         <script src="{{ url_for('static', filename='js/gap.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/signInAgain.js') }}"></script>
         <script>
             dup_check("{{ duplicate }}");
-            alert_check("{{ alert_ }}")
-            gap("{{ gap }}")
+            alert_check("{{ alert_ }}");
+            gap("{{ gap }}");
+            signInAgain("{{ sign_in }}");
             const dictData = JSON.parse('{{ dict_data | tojson | safe }}');
             const chartTitle = "{{ chart_title }}";
-            const start_key = "{{ start_key }}"
-            const end_key = "{{ end_key }}"
-            const dt = "{{ selected_data }}"
+            const start_key = "{{ start_key }}";
+            const end_key = "{{ end_key }}";
+            const dt = "{{ selected_data }}";
             plot(dictData, chartTitle, start_key, end_key, dt);
         </script>
 

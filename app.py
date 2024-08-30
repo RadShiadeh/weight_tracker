@@ -38,7 +38,7 @@ def signup_page():
 @login_required
 def index():
     dates = helpers.generate_dates()
-    global all_weights, last_seven, all_weekly_averages
+    all_weights, last_seven, all_weekly_averages = {}, {}, {}
 
     user_name = session["user"]["username"]
     collection = db["users"]
@@ -49,27 +49,36 @@ def index():
         all_weekly_averages = {w["date"]: [w["average"], w["index"]] for w in user_data["weekly_avgs"]}
         last_seven = user_data["last_seven"]
     else:
-        return redirect(url_for('/'))
+        return redirect(url_for('/', sign_in="true"))
 
     duplicate = request.args.get('duplicate', 'false')
     gap = request.args.get('gap', 'false')
     alert_ = request.args.get('alert_', 'false')
+
     all_weight_dates = []
     earliest_entry = ""
     latest_entry = ""
-    start_key = request.form.get('plot-from', "")
-    end_key = request.form.get('plot-to', "")
+    session["start_key"] = request.form.get('plot-from', "")
+    session["end_key"] = request.form.get('plot-to', "")
 
     if all_weights and all_weekly_averages:
         all_weight_dates = [datetime.strptime(date, "%Y-%m-%d") for date in all_weights.keys()]
         earliest_entry = min(all_weight_dates)
         latest_entry = max(all_weight_dates)
-        start_key = request.form.get('plot-from', earliest_entry.strftime('%Y-%m-%d'))
-        end_key = request.form.get('plot-to', latest_entry.strftime('%Y-%m-%d'))
+        session["start_key"] = request.form.get('plot-from', earliest_entry.strftime('%Y-%m-%d'))
+        session["end_key"] = request.form.get('plot-to', latest_entry.strftime('%Y-%m-%d'))
         all_weights, all_weekly_averages, last_seven = helpers.auto_fill_missing_dates(all_weights, all_weekly_averages, last_seven)
 
     if "selected_plot_data" not in session.keys():
         session["selected_plot_data"] = 'all_weights'
+    
+    if "data" not in session.keys():
+            session["data"] = {}
+    
+    if "start_key" not in session.keys():
+        session["start_key"] = 1
+        session["end_key"] = 1
+
 
     if request.method == 'POST':
         alert_ = False
@@ -103,7 +112,6 @@ def index():
             else:
                 all_weights, last_seven, all_weekly_averages, is_duplicate = helpers.update_everything(last_seven, new_weight, all_weekly_averages, all_weights, selected_date)
             
-            print(all_weights)
             helpers.update_db(all_weights, all_weekly_averages, last_seven, collection, user_name)
 
             if is_duplicate:
@@ -119,45 +127,50 @@ def index():
             session["selected_plot_data"] = request.form.get('data-select', 'weekly_averages')
 
     if all_weight_dates:
-        start_key = request.form.get('plot-from', earliest_entry.strftime('%Y-%m-%d'))
-        end_key = request.form.get('plot-to', latest_entry.strftime('%Y-%m-%d'))
+        session["start_key"] = request.form.get('plot-from', earliest_entry.strftime('%Y-%m-%d'))
+        session["end_key"] = request.form.get('plot-to', latest_entry.strftime('%Y-%m-%d'))
     else:
-        start_key = 1
-        end_key = 1
+        session["start_key"] = 1
+        session["end_key"] = 1
+        
 
-    dict_data = {}
-    chart_title = ""
+    
+    if "chart_title" not in session.keys():
+        session["chart_title"] = ""
+
     if all_weights and all_weekly_averages:
         if session["selected_plot_data"] == 'last_seven' and last_seven:
-            dict_data = {date: [value, index] for index, (date, value) in enumerate(last_seven[0]['data'].items(), 1)}
-            chart_title = "Last Seven Entries"
+            session["data"] = {date: [value, index] for index, (date, value) in enumerate(last_seven[0]['data'].items(), 1)}
+            session["chart_title"] = "Last Seven Entries"
         elif session["selected_plot_data"] == 'all_weights':
-            dict_data = all_weights
-            chart_title = "All Entries"
+            session["data"] = all_weights
+            session["chart_title"] = "All Entries"
         else:
-            start_index = start_key
-            end_index = end_key
+            start_index = session["start_key"]
+            end_index = session["end_key"]
             for d, w in all_weekly_averages.items():
                 if str(w[1]) == start_index:
-                    start_key = d
+                    session["start_key"] = d
                 elif str(w[1]) == end_index:
-                    end_key = d
+                    session["end_key"] = d
                     break
                 
-            dict_data = all_weekly_averages
-            chart_title = "Weekly Averages"
+            session["data"] = all_weekly_averages
+            session["chart_title"] = "Weekly Averages"
+
 
     return render_template(
         'index.html', 
         dates=dates, 
-        dict_data=dict_data, 
+        dict_data=session["data"], 
         duplicate=duplicate, 
-        chart_title=chart_title, 
+        chart_title=session["chart_title"], 
         selected_data=session["selected_plot_data"], 
         alert_=alert_, 
         gap=gap, 
-        start_key=start_key, 
-        end_key=end_key
+        start_key=session["start_key"], 
+        end_key=session["end_key"],
+        sign_in="false"
     )
 
 
