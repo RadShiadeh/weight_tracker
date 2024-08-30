@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, session, redirect
+from flask import Flask, jsonify, request, session, redirect, url_for
 import mongoengine as me
 from users_data import models
 import bcrypt
@@ -92,8 +92,8 @@ class User(me.Document):
         user_json = {
             "username": request.form.get("username"),
             "password": request.form.get("password"),
-            "all_weights": [],
-            "weekly_avgs": [],
+            "all_weights": {},
+            "weekly_avgs": {},
             "last_seven": []
         }
 
@@ -115,12 +115,27 @@ class User(me.Document):
             return jsonify({"error": "Invalid username or password"}), 400
     
     def update_entry(self, session, date, entry):
+        entry = float(entry)
         all_weights = session["user"]["all_weights"]
         all_weekly_averages = session["user"]["weekly_avgs"]
         last_seven = session["user"]["last_seven"]
         collection = db["users"]
         user_name = session["user"]["username"]
 
+        all_weights_c = {}
+        for w in all_weights:
+            all_weights_c[w["date"]] = [float(w["weight"][0]), int(w["weight"][1])]
 
-        all_weights, last_seven, all_weekly_averages, _ = helpers.update_local_enteries(last_seven, entry, all_weekly_averages, all_weights, date)
+        all_weekly_averages_c = {}
+        for w in all_weekly_averages:
+            all_weekly_averages_c[w["date"]] = [float(w["average"]), int(w["index"])]
+        
+        last_seven[0]['index'] = int(last_seven[0]['index'])
+        for k, v in last_seven[0]['data'].items():
+            last_seven[0]['data'][k] = float(v)
+
+        
+        all_weights, last_seven, all_weekly_averages, _ = helpers.update_local_enteries(last_seven, entry, all_weekly_averages_c, all_weights_c, date)
         helpers.update_db(all_weights, all_weekly_averages, last_seven, collection, user_name)
+
+        return redirect(url_for('index'))

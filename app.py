@@ -62,6 +62,12 @@ def index():
     session["start_key"] = request.form.get('plot-from', "")
     session["end_key"] = request.form.get('plot-to', "")
 
+    if "nw_dup" not in session.keys():
+        session["nw_dup"] = 0
+    
+    if "date_dup" not in session.keys():
+        session["date_dup"] = ""
+
     if all_weights and all_weekly_averages:
         all_weights, all_weekly_averages, last_seven = helpers.auto_fill_missing_dates(all_weights, all_weekly_averages, last_seven)
         all_weight_dates = [datetime.strptime(date, "%Y-%m-%d") for date in all_weights.keys()]
@@ -98,17 +104,23 @@ def index():
                 all_weights = helpers.reorder_indexs(all_weights)
                 all_weekly_averages = helpers.update_weekly_averages(all_weights)
                 last_seven = helpers.update_last_seven(last_seven, all_weights)
+                helpers.update_db(all_weights, all_weekly_averages, last_seven, collection, user_name)
 
             elif all_weight_dates and latest_entry < day_before:
                 all_weights, last_seven, all_weekly_averages, gap = helpers.fill_gaps(all_weights, last_seven, all_weekly_averages, latest_entry, new_weight, day_before)
+                helpers.update_db(all_weights, all_weekly_averages, last_seven, collection, user_name)
 
-            else:
+            elif not all_weight_dates: #new user
                 all_weights, last_seven, all_weekly_averages, is_duplicate = helpers.update_local_enteries(last_seven, new_weight, all_weekly_averages, all_weights, selected_date)
+                helpers.update_db(all_weights, all_weekly_averages, last_seven, collection, user_name)
             
-            helpers.update_db(all_weights, all_weekly_averages, last_seven, collection, user_name)
+            else: #duplicate weight
+                all_weights, last_seven, all_weekly_averages, is_duplicate = helpers.update_local_enteries(last_seven, new_weight, all_weekly_averages, all_weights, selected_date)
 
             if is_duplicate:
-                return redirect(url_for('index', duplicate='true'))
+                session["date_dup"] = selected_date
+                session["nw_dup"] = new_weight
+                return redirect(url_for('index', duplicate='true', new_weight=session["nw_dup"], date=session["date_dup"]))
             
             if gap:
                 return redirect(url_for('index', gap='true'))
@@ -162,7 +174,9 @@ def index():
         start_key=session["start_key"], 
         end_key=session["end_key"],
         sign_in="false",
-        auto_fill=auto_fill
+        auto_fill=auto_fill,
+        new_weight=session["nw_dup"],
+        date=session["date_dup"]
     )
 
 

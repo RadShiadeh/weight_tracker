@@ -16,8 +16,8 @@ def login():
 
 @app.route('/update_entry', methods=["POST"])
 def update_entry():
-    date = request.form.get('date')
-    entry = request.form.get('new_weight')
+    date = request.form.get('date_rep')
+    entry = request.form.get('new_weight_rep')
 
     return User().update_entry(session, date, entry)
 

@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 
 
 def update_local_enteries(last_seven, new_weight: int, weekly_average, all_weights_c, selected_date):
-    #print(f"{all_weights_c}, \n {weekly_average}, \n {last_seven[0]}")
     if not weekly_average:
         k = str(selected_date) + " to " + "now"
         weekly_average[k] = [new_weight, 1]
