@@ -2,12 +2,15 @@ from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, session
 from functools import wraps
 from pymongo import MongoClient
-import string_1
 from datetime import datetime, timedelta
 from helper import helpers
+from dotenv import load_dotenv
+import os
 
 app = Flask(__name__)
-key = string_1.get_secret_key()
+load_dotenv()
+
+key = os.getenv('SECRET_KEY')
 app.secret_key = key
 
 def login_required(f):
@@ -20,7 +23,7 @@ def login_required(f):
     
     return wrap
 
-uri = string_1.ret_uri()
+uri = os.getenv('MONGO_URI')
 client = MongoClient(uri)
 db = client["test"]
 
