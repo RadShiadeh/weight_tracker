@@ -47,6 +47,7 @@ def index():
     if user_data:
         all_weights = {w["date"]: [w["weight"][0], w["weight"][1]] for w in user_data["all_weights"]}
         all_weekly_averages = {w["date"]: [w["average"], w["index"]] for w in user_data["weekly_avgs"]}
+        all_weekly_averages = helpers.reformat_averages(all_weekly_averages)
         last_seven = user_data["last_seven"]
     else:
         return redirect(url_for('/', sign_in="true"))

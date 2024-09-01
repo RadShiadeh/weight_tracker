@@ -2,7 +2,8 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 
 
-def update_local_enteries(last_seven, new_weight: int, weekly_average, all_weights_c, selected_date):
+def update_local_enteries(last_seven, new_weight: float, weekly_average, all_weights_c, selected_date):
+    new_weight = float("{:.3f}".format(new_weight))
     if not weekly_average:
         k = str(selected_date) + " to " + "now"
         weekly_average[k] = [new_weight, 1]
@@ -35,6 +36,7 @@ def update_local_enteries(last_seven, new_weight: int, weekly_average, all_weigh
             for k in last_seven[0]['data'].values():
                 average += k
             average = average / 7
+            average = float("{:.3f}".format(average))
 
             start_d: str = ""
             all_weights_ks: list[str] = []
@@ -62,7 +64,9 @@ def update_local_enteries(last_seven, new_weight: int, weekly_average, all_weigh
             average: float = 0
             for k in last_seven[0]['data'].values():
                 average += k
+
             average = average / len(last_seven[0]['data'].keys())
+            average = float("{:.3f}".format(average))
             weekly_average[end_key] = [average, int(end_week_index)]
             all_weights_c[selected_date][1] = end_week_index
     else:
@@ -75,14 +79,18 @@ def update_local_enteries(last_seven, new_weight: int, weekly_average, all_weigh
         
         pre_average = weekly_average[key][0]
         post_average = 0
+        
         if selected_date in last_seven[0]['data'].keys():
             last_seven[0]['data'][selected_date] = new_weight
             len_last_seven = len(last_seven[0]['data'])
             post_average = ( ( (pre_average * len_last_seven) - old_weight_entry) + new_weight ) / len_last_seven
         else:
             post_average = ( ( (pre_average * 7) - old_weight_entry) + new_weight ) / 7
-        
+
+        post_average = float("{:.3f}".format(post_average))
         weekly_average[key][0] = post_average
+    
+    print("i get called")
     
     return all_weights_c, last_seven, weekly_average, duplicate
 
@@ -252,3 +260,11 @@ def fill_gaps(all_weights, last_seven, all_weekly_averages, latest, new_entry, n
         all_weights, last_seven, all_weekly_averages, _ = update_local_enteries(last_seven, new_entry, all_weekly_averages, all_weights, date_str)
     
     return all_weights, last_seven, all_weekly_averages, True
+
+
+def reformat_averages(all_weekly_averages):
+    for k, v in all_weekly_averages.items():
+        v[0] = float("{:.3f}".format(v[0]))
+        all_weekly_averages[k] = [v[0], v[1]]
+    
+    return all_weekly_averages
