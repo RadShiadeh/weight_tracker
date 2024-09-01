@@ -141,3 +141,43 @@ class User(me.Document):
         helpers.update_db(all_weights, all_weekly_averages, last_seven, collection, user_name)
 
         return redirect(url_for('index'))
+    
+    def get_user_data(self, username):
+        collection = db["users"]
+        try:
+            user_data = collection.find_one({"username": username})
+            if user_data:
+                user_data['_id'] = str(user_data['_id'])
+                del user_data['password']
+                return jsonify(user_data), 200
+            else:
+                return jsonify({"error": f"{username} not found"}), 404
+            
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+    
+    def update_user(self, username):
+        collection = db["users"]
+        new_data = request.get_json()
+        
+        try:
+            res = collection.update_one({"username": username}, {"$set": new_data})
+            if res.matched_count > 0:
+                return jsonify({"message": f"Updated {username} with {new_data}"}), 200
+            else:
+                return jsonify({"error": f"{username} not found"}), 404
+            
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+    
+    def delete_user(self, username):
+        collection = db["users"]
+        try:
+            res = collection.delete_one({"username": username})
+            if res.deleted_count > 0:
+                return jsonify({"message": f"deleted {username}"}), 200
+            else:
+                return jsonify({"error:" f"{username} not found"}), 404
+            
+        except Exception as e:
+            return jsonify({"error": f"{str(e)}"}), 500
