@@ -94,10 +94,10 @@ def auto_fill_missing_dates(all_weights, weekly_averages, last_seven):
     last_avg_entry = max(weekly_averages.items(), key=lambda x: x[1][1])
     last_avg_value = last_avg_entry[1][0]
 
-    yesterday = datetime.today() - timedelta(days=1)
+    today = datetime.today()
     current_date = last_weight_date + timedelta(days=1)
 
-    while current_date <= yesterday:
+    while current_date < today:
         formatted_date = current_date.strftime("%Y-%m-%d")
         all_weights, last_seven, weekly_averages, _ = update_local_enteries(last_seven, last_avg_value, weekly_averages, all_weights, formatted_date)
         current_date += timedelta(days=1)
@@ -246,7 +246,7 @@ def delete_date(all_weights, all_weekly_averages, last_seven, date):
     return all_weights, all_weekly_averages, last_seven, alert
 
 def fill_gaps(all_weights, last_seven, all_weekly_averages, latest, new_entry, new_date):
-    while latest < new_date:
+    while latest <= new_date:
         latest += timedelta(days=1)
         date_str = latest.strftime("%Y-%m-%d")
         all_weights, last_seven, all_weekly_averages, _ = update_local_enteries(last_seven, new_entry, all_weekly_averages, all_weights, date_str)

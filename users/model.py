@@ -29,6 +29,8 @@ class User(me.Document):
         session["selected_plot_data"] = 'all_weights'
         session["data"] = {}
         session["chart_title"] = ""
+        session["nw_dup"] = 0
+        session["date_dup"] = ""
 
         return user, 200
 

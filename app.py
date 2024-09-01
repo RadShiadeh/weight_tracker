@@ -62,12 +62,6 @@ def index():
     session["start_key"] = request.form.get('plot-from', "")
     session["end_key"] = request.form.get('plot-to', "")
 
-    if "nw_dup" not in session.keys():
-        session["nw_dup"] = 0
-    
-    if "date_dup" not in session.keys():
-        session["date_dup"] = ""
-
     if all_weights and all_weekly_averages:
         all_weights, all_weekly_averages, last_seven = helpers.auto_fill_missing_dates(all_weights, all_weekly_averages, last_seven)
         all_weight_dates = [datetime.strptime(date, "%Y-%m-%d") for date in all_weights.keys()]
